@@ -23,6 +23,7 @@ func (c *Client) IsReady() (bool, error) {
 	}
 
 	var r response
+
 	err = json.Unmarshal(res, &r)
 	if err != nil {
 		return false, errors.Wrap(err, "failed to unmarshal response")

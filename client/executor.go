@@ -21,18 +21,19 @@ const (
 	ClassServerError
 )
 
-type errorResponse struct {
-	Value errorValue `json:"value"`
-}
+// TODO: Implement error handling
+// type errorResponse struct {
+// 	Value errorValue `json:"value"`
+// }
 
-type errorValue struct {
-	Error      string                 `json:"error"`
-	Message    string                 `json:"message"`
-	Stacktrace string                 `json:"stacktrace"`
-	Data       map[string]interface{} `json:"data"`
-}
+// type errorValue struct {
+// 	Error      string                 `json:"error"`
+// 	Message    string                 `json:"message"`
+// 	Stacktrace string                 `json:"stacktrace"`
+// 	Data       map[string]interface{} `json:"data"`
+// }
 
-// TODO: Remove driver.Driver from params
+// TODO: Remove driver.Driver from params.
 func ExecuteRequest(
 	method, route string, payload interface{}, d *driver.Driver,
 ) ([]byte, error) {
@@ -43,7 +44,9 @@ func ExecuteRequest(
 
 	url := fmt.Sprintf("%s:%d%s", d.RemoteURL, d.Port, route)
 
-	req, err := http.NewRequestWithContext(context.Background(), method, url, bytes.NewBuffer(body))
+	req, err := http.NewRequestWithContext(
+		context.Background(), method, url, bytes.NewBuffer(body),
+	)
 	if err != nil {
 		return []byte{}, errors.Wrap(err, "failed to create request")
 	}
@@ -58,11 +61,13 @@ func ExecuteRequest(
 	if err != nil {
 		return []byte{}, errors.Wrap(err, "failed to send request")
 	}
+	defer res.Body.Close()
 
 	b, err := io.ReadAll(res.Body)
 	if err != nil {
 		return []byte{}, errors.Wrap(err, "failed to read response body")
 	}
+
 	fmt.Println("Response body: ", string(b))
 
 	if getStatusClass(res.StatusCode) != ClassSuccessful {

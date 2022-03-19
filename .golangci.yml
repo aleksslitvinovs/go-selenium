@@ -20,13 +20,15 @@ linters-settings:
   tagliatelle:
     case:
       rules:
-        json: snake
+        json: camel
   wsl:
     allow-separated-leading-comment: true
 
 linters:
   enable-all: true
   disable:
+    - forbidigo # TODO: Enable when finished testing
+    - revive # TODO: Write comments for all exported funcs
     - gomnd
     - gomoddirectives
     - nestif

@@ -26,13 +26,13 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+
 	defer func() {
 		// TODO: Kill GC after connection is closed
 		err = c.Stop()
 		if err != nil {
 			panic(err)
 		}
-
 	}()
 
 	err = c.OpenURL("https://duckduckgo.com/")
@@ -47,7 +47,9 @@ func main() {
 
 	fmt.Println(url)
 
-	bodyElement := element.NewElement(selectors.CSS, "#search_form_input_homepager")
+	bodyElement := element.NewElement(
+		selectors.CSS, "#search_form_input_homepager",
+	)
 	fmt.Printf("%v\n", bodyElement)
 
 	// err = bodyElement.SendKeys(c, "Hello World")
@@ -80,5 +82,4 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-
 }

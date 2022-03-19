@@ -23,6 +23,7 @@ func (e *Element) FindElement(c *client.Client) (string, error) {
 	var response struct {
 		Value map[string]string `json:"value"`
 	}
+
 	err = json.Unmarshal(res, &response)
 	if err != nil {
 		return "", errors.Wrap(err, "failed to unmarshal response")

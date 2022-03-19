@@ -9,6 +9,7 @@ import (
 	"github.com/pkg/errors"
 )
 
+// Driver resembles a browser driver and parameters to connect to it.
 type Driver struct {
 	WebdriverPath string
 	Port          int
@@ -23,24 +24,29 @@ func NewDriverBuilder() *Driver {
 
 func (d *Driver) SetDriver(path string) *Driver {
 	d.WebdriverPath = path
+
 	return d
 }
 
 func (d *Driver) SetPort(port int) *Driver {
 	d.Port = port
+
 	return d
 }
 
-func (d *Driver) SetRemoteUrl(url string) *Driver {
+func (d *Driver) SetRemoteURL(url string) *Driver {
 	d.RemoteURL = url
+
 	return d
 }
 
+//nolint:stylecheck
 func (d *Driver) Build() *Driver {
 	return d
 }
 
 func (d *Driver) Launch() error {
+	//nolint:gosec
 	cmd := exec.Command(d.WebdriverPath, fmt.Sprintf("--port=%d", d.Port))
 
 	output, err := cmd.StdoutPipe()

@@ -9,7 +9,7 @@ type Elements struct {
 	SelectorType string `json:"using"`
 	Selector     string `json:"value"`
 
-	Values []*element.Element `json:"value"`
+	Values []*element.Element `json:"value"` //nolint:govet
 }
 
 func NewElements(selectorType, selector string) *Elements {
@@ -19,7 +19,7 @@ func NewElements(selectorType, selector string) *Elements {
 	}
 }
 
-// TODO: Implement
+// TODO: Implement.
 func (ee *Elements) FindElements(c *client.Client) ([]string, error) {
 	return []string{}, nil
 }
