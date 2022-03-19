@@ -5,6 +5,7 @@ import (
 	"github.com/theRealAlpaca/go-selenium/client"
 )
 
+// Start starts browser driver server and establishes WebDriver session.
 func Start(c *client.Client) error {
 	err := c.Driver.Launch()
 	if err != nil {
@@ -19,5 +20,6 @@ func Start(c *client.Client) error {
 	return nil
 }
 
-// TODO: Read selenium.json config
+// TODO: Read selenium.json config.
+//nolint: unused,deadcode
 func readConfig() {}

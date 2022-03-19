@@ -5,7 +5,7 @@ const (
 	XPath           = "xpath"
 	LinkText        = "link text"
 	PartialLinkText = "partial link text"
-	
-	// TODO: Maybe can improved to just `Tag`
+
+	// TODO: Maybe can improved to just `Tag`.
 	TagName = "tag name"
 )

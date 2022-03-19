@@ -1,0 +1,78 @@
+run:
+  deadline: 2m
+
+linters-settings:
+  depguard:
+    list-type: blacklist
+    include-go-root: true
+    packages:
+      - io/ioutil
+      - github.com/aws/aws-sdk-go/*
+  gocyclo:
+    min-complexity: 10
+  grouper:
+    const-require-single-const: true
+    import-require-single-import: true
+    var-require-single-var: true
+  lll:
+    line-length: 80
+    tab-width: 4
+  tagliatelle:
+    case:
+      rules:
+        json: camel
+  wsl:
+    allow-separated-leading-comment: true
+
+linters:
+  enable-all: true
+  disable:
+    - forbidigo # TODO: Enable when finished testing
+    - revive # TODO: Write comments for all exported funcs
+    - gomnd
+    - gomoddirectives
+    - nestif
+    - contextcheck
+    # default disabled linters
+    - dupl
+    - exhaustive
+    - exhaustivestruct
+    - funlen
+    - gochecknoglobals
+    - gochecknoinits
+    - godox
+    - gofumpt
+    - ifshort
+    - ireturn
+    - varnamelen
+    # deprecated linters
+    - golint
+    - interfacer
+    - maligned
+    - scopelint
+  fast: false
+
+issues:
+  include:
+    - EXC0012
+    - EXC0014
+  exclude-rules:
+    - path: _test\.go
+      linters:
+        - goerr113
+        - gofmt
+        - noctx
+        # default unit test disabled linters
+        - containedctx
+        - cyclop
+        - errcheck
+        - forcetypeassert
+        - gocognit
+        - gocyclo
+        - gosec
+        - maintidx
+        - paralleltest
+        - testpackage
+    - linters:
+        - lll
+      source: "// swagger:"

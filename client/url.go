@@ -42,6 +42,7 @@ func (c *Client) GetURL() (string, error) {
 	var response struct {
 		Value string `json:"value"`
 	}
+
 	err = json.Unmarshal(res, &response)
 	if err != nil {
 		return "", errors.Wrap(err, "failed to unmarshal response")

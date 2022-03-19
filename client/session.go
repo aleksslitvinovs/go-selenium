@@ -10,7 +10,7 @@ import (
 )
 
 func (c *Client) StartSession() error {
-	err := waitUntilIsReady(time.Duration(10*time.Second), c)
+	err := waitUntilIsReady(10*time.Second, c)
 	if err != nil {
 		return errors.Wrap(err, "driver is not ready to start a new session")
 	}
@@ -36,6 +36,7 @@ func (c *Client) StartSession() error {
 	}
 
 	var r response
+
 	err = json.Unmarshal(res, &r)
 	if err != nil {
 		return errors.Wrap(err, "failed to unmarshal response")
@@ -72,7 +73,6 @@ func (c *Client) Refresh() error {
 	}
 
 	return nil
-
 }
 
 func waitUntilIsReady(timeout time.Duration, c *Client) error {
@@ -86,10 +86,10 @@ func waitUntilIsReady(timeout time.Duration, c *Client) error {
 		}
 
 		ok, err := c.IsReady()
-
-		netErr := errors.New("dial tcp")
 		if err != nil {
 			fmt.Println(err.Error())
+
+			netErr := errors.New("dial tcp")
 			if errors.As(err, &netErr) {
 				continue
 			}

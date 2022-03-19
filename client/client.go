@@ -17,6 +17,7 @@ func NewClientBuilder() *Client {
 
 func (c *Client) SetDriver(d *driver.Driver) *Client {
 	c.Driver = d
+
 	return c
 }
 
@@ -46,7 +47,7 @@ func (c *Client) Stop() error {
 		}
 
 		return nil
-	}()
+	}() //nolint:errcheck
 
 	err := c.DeleteSession()
 	if err != nil {
