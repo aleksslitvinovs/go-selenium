@@ -6,23 +6,21 @@ import (
 
 	"github.com/theRealAlpaca/go-selenium"
 	"github.com/theRealAlpaca/go-selenium/client"
-	"github.com/theRealAlpaca/go-selenium/client/element"
-	"github.com/theRealAlpaca/go-selenium/client/element/selectors"
+	"github.com/theRealAlpaca/go-selenium/client/session/element"
+	"github.com/theRealAlpaca/go-selenium/client/session/element/selectors"
 	"github.com/theRealAlpaca/go-selenium/driver"
 )
 
+//nolint:errcheck
 func main() {
-	d := driver.
-		NewDriverBuilder().
-		SetDriver("/Users/aleksslitvinovs/Downloads/chromedriver").
-		SetPort(4444).
-		Build()
+	d := driver.NewDriver(
+		"/Users/aleksslitvinovs/Downloads/chromedriver",
+		4444,
+		"http://localhost",
+	)
+	c := client.NewClient(d)
 
-	c := client.NewClientBuilder().
-		SetDriver(d).
-		Build()
-
-	err := selenium.Start(c)
+	s, err := selenium.Start(c)
 	if err != nil {
 		panic(err)
 	}
@@ -35,12 +33,12 @@ func main() {
 		}
 	}()
 
-	err = c.OpenURL("https://duckduckgo.com/")
+	err = s.OpenURL("https://duckduckgo.com/")
 	if err != nil {
 		panic(err)
 	}
 
-	url, err := c.GetURL()
+	url, err := s.GetCurrentURL()
 	if err != nil {
 		panic(err)
 	}
@@ -48,36 +46,31 @@ func main() {
 	fmt.Println(url)
 
 	bodyElement := element.NewElement(
-		selectors.CSS, "#search_form_input_homepager",
+		selectors.CSS, "#search_form_input_homepage",
 	)
-	fmt.Printf("%v\n", bodyElement)
 
-	// err = bodyElement.SendKeys(c, "Hello World")
-	// if err != nil {
-	// 	panic(err)
-	// }
+	err = bodyElement.SendKeys(s, "Hello World")
+	if err != nil {
+		panic(err)
+	}
 
-	// time.Sleep(5 * time.Second)
+	clickButton := element.NewElement(selectors.CSS, "[type=submit]")
+	clickButton.WaitFor(s, time.Second*5)
+	clickButton.Click(s)
 
-	// _, err = bodyElement.GetText(c)
-	// if err != nil {
-	// 	panic(err)
-	// }
+	searchResultElement := element.NewElement(
+		selectors.CSS, "#r1-0 .result__title",
+	)
+	searchResultElement.WaitFor(s, time.Second*5).UntilIsVisible()
 
-	// err = bodyElement.Clear(c)
-	// if err != nil {
-	// 	panic(err)
-	// }
+	text, err := searchResultElement.GetText(s)
+	if err != nil {
+		panic(err)
+	}
 
-	// time.Sleep(5 * time.Second)
+	fmt.Println(text)
 
-	// c.Refresh()
-
-	// time.Sleep(5 * time.Second)
-
-	// fmt.Println(text)
-
-	err = bodyElement.WaitUntil(c, 60*time.Second).IsVisible()
+	s.Refresh()
 
 	if err != nil {
 		panic(err)

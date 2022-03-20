@@ -2,7 +2,7 @@ package elements
 
 import (
 	"github.com/theRealAlpaca/go-selenium/client"
-	"github.com/theRealAlpaca/go-selenium/client/element"
+	"github.com/theRealAlpaca/go-selenium/client/session/element"
 )
 
 type Elements struct {

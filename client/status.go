@@ -5,27 +5,25 @@ import (
 	"net/http"
 
 	"github.com/pkg/errors"
+	"github.com/theRealAlpaca/go-selenium/api"
 )
 
 func (c *Client) IsReady() (bool, error) {
-	type successResponse struct {
-		Ready   bool   `json:"ready"`
-		Message string `json:"message"`
-	}
-
-	type response struct {
-		Value successResponse `json:"value"`
-	}
-
-	res, err := ExecuteRequest(http.MethodGet, "/status", struct{}{}, c.Driver)
+	res, err := api.ExecuteRequestRaw(http.MethodGet, "/status", c, struct{}{})
 	if err != nil {
 		return false, errors.Wrap(err, "failed to get status")
 	}
 
+	type response struct {
+		Value struct {
+			Ready   bool   `json:"ready"`
+			Message string `json:"message"`
+		} `json:"value"`
+	}
+
 	var r response
 
-	err = json.Unmarshal(res, &r)
-	if err != nil {
+	if err := json.Unmarshal(res, &r); err != nil {
 		return false, errors.Wrap(err, "failed to unmarshal response")
 	}
 

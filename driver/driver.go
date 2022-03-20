@@ -17,32 +17,12 @@ type Driver struct {
 	cmd           *exec.Cmd
 }
 
-// NewDriverBuilder creates a new driver builder with default configuration.
-func NewDriverBuilder() *Driver {
-	return &Driver{Port: 4444, RemoteURL: "http://localhost"}
-}
-
-func (d *Driver) SetDriver(path string) *Driver {
-	d.WebdriverPath = path
-
-	return d
-}
-
-func (d *Driver) SetPort(port int) *Driver {
-	d.Port = port
-
-	return d
-}
-
-func (d *Driver) SetRemoteURL(url string) *Driver {
-	d.RemoteURL = url
-
-	return d
-}
-
-//nolint:stylecheck
-func (d *Driver) Build() *Driver {
-	return d
+func NewDriver(webdriverPath string, port int, remoteURL string) *Driver {
+	return &Driver{
+		WebdriverPath: webdriverPath,
+		Port:          port,
+		RemoteURL:     remoteURL,
+	}
 }
 
 func (d *Driver) Launch() error {
@@ -68,8 +48,8 @@ func (d *Driver) Launch() error {
 	return nil
 }
 
-func (c *Driver) Stop() error {
-	err := c.cmd.Process.Kill()
+func (d *Driver) Stop() error {
+	err := d.cmd.Process.Kill()
 	if err != nil {
 		return errors.Wrap(err, "failed to kill browser driver")
 	}
