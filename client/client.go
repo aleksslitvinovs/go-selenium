@@ -18,7 +18,10 @@ type client struct {
 	Sessions map[*session.Session]bool
 }
 
-var Client = &client{Sessions: make(map[*session.Session]bool)}
+var (
+	Client = &client{Sessions: make(map[*session.Session]bool)}
+	done   = make(chan struct{})
+)
 
 func (c *client) GetURL() string {
 	return Client.Driver.RemoteURL
@@ -44,15 +47,29 @@ func StartNewSession() (*session.Session, error) {
 		return nil, errors.Wrap(err, "failed to start new session")
 	}
 
+	s.KillDriver = done
+
 	Client.Sessions[s] = true
+
+	go sessionListener(s)
 
 	return s, nil
 }
 
-func DeleteSession(s *session.Session) error {
-	if err := s.DeleteSession(); err != nil {
-		return errors.Wrap(err, "failed to delete session")
+func sessionListener(s *session.Session) {
+	if len(Client.Sessions) == 0 {
+		Stop()
 	}
+
+	<-s.KillDriver
+
+	delete(Client.Sessions, s)
+
+	Stop()
+}
+
+func DeleteSession(s *session.Session) error {
+	s.DeleteSession()
 
 	delete(Client.Sessions, s)
 
@@ -77,18 +94,17 @@ func Stop() {
 			continue
 		}
 
-		err := s.DeleteSession()
-		if err != nil {
-			logger.Error(err.Error())
+		s.DeleteSession()
 
+		if len(s.Errors) != 0 {
 			exitCode = 1
 		}
 
-		if config.Config.RaiseErrorsAutomaticatically {
+		if config.Config.RaiseErrorsAutomatically {
 			e := s.RaiseErrors()
 
 			if e != "" {
-				logger.Error(e)
+				logger.Errorf("There were issues during execution:\n%s", e)
 
 				exitCode = 1
 			}

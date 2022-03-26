@@ -3,16 +3,26 @@ package config
 import (
 	"encoding/json"
 	"os"
+	"time"
 
 	"github.com/pkg/errors"
 	"github.com/theRealAlpaca/go-selenium/logger"
 )
 
 //nolint:tagliatelle
+type ElementSettings struct {
+	IgnoreNotFound bool          `json:"ignore_not_found"`
+	RetryTimeout   time.Duration `json:"retry_timeout"`
+	PollInterval   time.Duration `json:"poll_interval"`
+	SelectorType   string        `json:"selector_type"`
+}
+
+//nolint:tagliatelle
 type config struct {
-	LogLevel                     string `json:"logging"`
-	SoftAsserts                  bool   `json:"soft_asserts"`
-	RaiseErrorsAutomaticatically bool   `json:"raise_errors_automaticially"`
+	LogLevel                 string           `json:"logging"`
+	ElementSettings          *ElementSettings `json:"element_settings"`
+	SoftAsserts              bool             `json:"soft_asserts"`
+	RaiseErrorsAutomatically bool             `json:"raise_errors_automatically"` //nolint:lll
 }
 
 var Config = &config{LogLevel: "info"}
@@ -78,9 +88,9 @@ func createDefaultConfig() (*config, error) {
 	defer f.Close()
 
 	c := &config{
-		LogLevel:                     "info",
-		SoftAsserts:                  false,
-		RaiseErrorsAutomaticatically: true,
+		LogLevel:                 "info",
+		SoftAsserts:              false,
+		RaiseErrorsAutomatically: true,
 	}
 
 	data, err := json.MarshalIndent(c, "", "  ")

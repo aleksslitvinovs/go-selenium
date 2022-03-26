@@ -1,20 +1,21 @@
 package session
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"strings"
 
 	"github.com/pkg/errors"
 	"github.com/theRealAlpaca/go-selenium/api"
+	"github.com/theRealAlpaca/go-selenium/util"
 )
 
 type Session struct {
-	URL    string
-	Port   int
-	ID     string
-	Errors []string
+	URL        string
+	Port       int
+	ID         string
+	Errors     []string
+	KillDriver chan struct{}
 }
 
 func (s *Session) GetURL() string {
@@ -25,17 +26,15 @@ func (s *Session) GetPort() int {
 	return s.Port
 }
 
+func (s *Session) AddError(err string) {
+	s.Errors = append(s.Errors, err)
+}
+
 func NewSession(c api.Requester) (*Session, error) {
 	req := struct {
 		Capabilities map[string]interface{} `json:"capabilities"`
 	}{
 		make(map[string]interface{}),
-	}
-
-	res, err := api.ExecuteRequestRaw(http.MethodPost, "/session", c, req)
-
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to start session")
 	}
 
 	var r struct {
@@ -45,8 +44,9 @@ func NewSession(c api.Requester) (*Session, error) {
 		} `json:"value"`
 	}
 
-	if err := json.Unmarshal(res, &r); err != nil {
-		return nil, errors.Wrap(err, "failed to unmarshal response")
+	err := api.ExecuteRequestCustom(http.MethodPost, "/session", c, req, &r)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to start session")
 	}
 
 	session := &Session{
@@ -58,32 +58,48 @@ func NewSession(c api.Requester) (*Session, error) {
 	return session, nil
 }
 
-func (s *Session) DeleteSession() error {
-	_, err := api.ExecuteRequest(
+func (s *Session) Stop() {
+	s.DeleteSession() //nolint:errcheck
+}
+
+func (s *Session) DeleteSession() {
+	res, err := api.ExecuteRequest(
 		http.MethodDelete,
 		fmt.Sprintf("/session/%s", s.ID),
 		s,
 		struct{}{},
 	)
 	if err != nil {
-		return errors.Wrap(err, "failed to stop session")
+		if errRes := res.GetErrorReponse(); errRes != nil {
+			util.HandleResponseError(s, errRes)
+
+			return
+		}
+
+		util.HandleError(s, errors.Wrap(err, "failed to delete session"))
 	}
 
-	return nil
+	s.KillDriver <- struct{}{}
+
+	return
 }
 
-func (s *Session) Refresh() error {
-	_, err := api.ExecuteRequest(
+func (s *Session) Refresh() {
+	res, err := api.ExecuteRequest(
 		http.MethodPost,
 		fmt.Sprintf("/session/%s/refresh", s.ID),
 		s,
 		struct{}{},
 	)
 	if err != nil {
-		return errors.Wrap(err, "failed to refresh window")
-	}
+		if errRes := res.GetErrorReponse(); errRes != nil {
+			util.HandleResponseError(s, errRes)
 
-	return nil
+			return
+		}
+
+		util.HandleError(s, errors.Wrap(err, "failed to refresh session"))
+	}
 }
 
 func (s *Session) RaiseErrors() string {

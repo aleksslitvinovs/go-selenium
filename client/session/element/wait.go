@@ -4,7 +4,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"github.com/theRealAlpaca/go-selenium/client/session"
+	"github.com/theRealAlpaca/go-selenium/api"
 	"github.com/theRealAlpaca/go-selenium/util"
 )
 
@@ -21,47 +21,50 @@ func (e *Element) WaitFor(timeout time.Duration) *waiter {
 }
 
 func (w *waiter) UntilIsVisible() *Element {
-	return waitCondition(w, w.e.IsVisible, true, "isible")
+	return waitCondition(w, w.e.isVisible, true, "is visible")
 }
 func (w *waiter) UntilIsNotVisible() *Element {
-	return waitCondition(w, w.e.IsVisible, false, "not visible")
+	return waitCondition(w, w.e.isVisible, false, "not visible")
 }
 
 func (w *waiter) UntilIsEnabled() *Element {
-	return waitCondition(w, w.e.IsEnabled, true, "enabled")
+	return waitCondition(w, w.e.isEnabled, true, "enabled")
 }
 
 func (w *waiter) UntilIsNotEnabled() *Element {
-	return waitCondition(w, w.e.IsEnabled, false, "not enabled")
+	return waitCondition(w, w.e.isEnabled, false, "not enabled")
 }
 
 func (w *waiter) UntilIsSelected() *Element {
-	return waitCondition(w, w.e.IsSelected, true, "selected")
+	return waitCondition(w, w.e.isSelected, true, "selected")
 }
 
 func (w *waiter) UntilIsNotSelected() *Element {
-	return waitCondition(w, w.e.IsSelected, false, "not selected")
+	return waitCondition(w, w.e.isSelected, false, "not selected")
 }
 
 func waitCondition(
 	w *waiter,
-	condition func(s *session.Session) (bool, error),
+	condition func() (*api.Response, error),
 	expected bool,
 	conditionName string,
 ) *Element {
 	startTime := time.Now()
 	endTime := startTime.Add(w.timeout)
 
-	w.e.IgnoreNotFound = true
+	intialSettings := *w.e.Settings
+
+	w.e.Settings.IgnoreNotFound = true
 
 	defer func() {
-		w.e.IgnoreNotFound = false
+		w.e.Settings = &intialSettings
 	}()
 
 	for {
 		if endTime.Before(time.Now()) {
 			util.HandleError(
-				w.e.Session, errors.Errorf(
+				w.e.Session,
+				errors.Errorf(
 					"Element %q is not %s after %s (time elapsed %s)",
 					w.e.Selector,
 					conditionName,
@@ -73,17 +76,25 @@ func waitCondition(
 			return w.e
 		}
 
-		actual, err := condition(w.e.Session)
+		res, err := condition()
 		if err != nil {
+			if errors.As(err, &ErrWebIDNotSet) {
+				time.Sleep(w.e.Settings.PollInterval)
+
+				continue
+			}
+
 			util.HandleError(
 				w.e.Session, errors.Wrap(err, "could not get condition"),
 			)
-		}
 
-		if actual == expected {
 			return w.e
 		}
 
-		time.Sleep(time.Second)
+		if res.Value.(bool) == expected {
+			return w.e
+		}
+
+		time.Sleep(w.e.Settings.PollInterval)
 	}
 }

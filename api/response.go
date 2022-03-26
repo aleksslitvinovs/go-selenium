@@ -3,12 +3,17 @@ package api
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/pkg/errors"
 )
 
 type Response struct {
 	Value interface{} `json:"value"`
+}
+
+type ExpandedResponse struct {
+	Elements map[string]string `json:"-"`
 }
 
 type ErrorResponse struct {
@@ -57,7 +62,29 @@ func (r *Response) UnmarshalJSON(data []byte) error {
 		return errors.Wrap(err, "failed to unmarshal response")
 	}
 
-	if _, ok := res.Value.(map[string]interface{}); ok {
+	if _, ok := res.Value.(map[string]string); ok {
+		var response struct {
+			Value ExpandedResponse `json:"value"`
+		}
+
+		if err := json.Unmarshal(data, &response); err != nil {
+			return errors.Wrap(err, "failed to unmarshal response")
+		}
+
+		r.Value = response.Value
+
+		return nil
+	}
+
+	if values, ok := res.Value.(map[string]interface{}); ok {
+		for k, v := range values {
+			if strings.HasPrefix(k, "element") {
+				r.Value = map[string]string{k: v.(string)}
+
+				return nil
+			}
+		}
+
 		var errResponse struct {
 			Value ErrorResponse `json:"value"`
 		}
