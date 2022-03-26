@@ -9,14 +9,12 @@ import (
 )
 
 type waiter struct {
-	s       *session.Session
 	e       *Element
 	timeout time.Duration
 }
 
-func (e *Element) WaitFor(s *session.Session, timeout time.Duration) *waiter {
+func (e *Element) WaitFor(timeout time.Duration) *waiter {
 	return &waiter{
-		s:       s,
 		e:       e,
 		timeout: timeout,
 	}
@@ -54,10 +52,16 @@ func waitCondition(
 	startTime := time.Now()
 	endTime := startTime.Add(w.timeout)
 
+	w.e.IgnoreNotFound = true
+
+	defer func() {
+		w.e.IgnoreNotFound = false
+	}()
+
 	for {
 		if endTime.Before(time.Now()) {
 			util.HandleError(
-				w.s, errors.Errorf(
+				w.e.Session, errors.Errorf(
 					"Element %q is not %s after %s (time elapsed %s)",
 					w.e.Selector,
 					conditionName,
@@ -69,9 +73,9 @@ func waitCondition(
 			return w.e
 		}
 
-		actual, err := condition(w.s)
+		actual, err := condition(w.e.Session)
 		if err != nil {
-			util.HandleError(w.s, errors.Wrap(err, "could not get condition"))
+			util.HandleError(w.e.Session, errors.Wrap(err, "could not get condition"))
 		}
 
 		if actual == expected {

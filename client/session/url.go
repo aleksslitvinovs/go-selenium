@@ -6,6 +6,8 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/theRealAlpaca/go-selenium/api"
+	// TODO: fix import cycle
+	// "github.com/theRealAlpaca/go-selenium/util"
 )
 
 func (s *Session) OpenURL(url string) error {
@@ -34,7 +36,12 @@ func (s *Session) GetCurrentURL() (string, error) {
 		struct{}{},
 	)
 	if err != nil {
-		return "", errors.Wrap(err, "failed to get url")
+		errRes := res.GetErrorReponse()
+		if errRes != nil {
+			return "", errors.Wrap(err, "failed to get current url")
+		}
+
+		return "", errors.New(res.String())
 	}
 
 	return res.Value.(string), nil

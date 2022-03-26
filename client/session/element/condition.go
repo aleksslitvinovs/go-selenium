@@ -7,10 +7,11 @@ import (
 	"github.com/pkg/errors"
 	"github.com/theRealAlpaca/go-selenium/api"
 	"github.com/theRealAlpaca/go-selenium/client/session"
+	"github.com/theRealAlpaca/go-selenium/util"
 )
 
 func (e *Element) IsVisible(s *session.Session) (bool, error) {
-	if err := e.setElementID(s); err != nil {
+	if err := e.setElementID(); err != nil {
 		return false, errors.Wrap(err, "failed to set element's webID")
 	}
 
@@ -21,14 +22,16 @@ func (e *Element) IsVisible(s *session.Session) (bool, error) {
 		e,
 	)
 	if err != nil {
-		return false, errors.Wrap(err, "could not get display state")
+		util.HandleResponseError(s, res.GetErrorReponse())
+
+		return false, nil
 	}
 
 	return res.Value.(bool), nil
 }
 
 func (e *Element) IsEnabled(s *session.Session) (bool, error) {
-	if err := e.setElementID(s); err != nil {
+	if err := e.setElementID(); err != nil {
 		return false, errors.Wrap(err, "failed to set element's webID")
 	}
 
@@ -39,14 +42,16 @@ func (e *Element) IsEnabled(s *session.Session) (bool, error) {
 		e,
 	)
 	if err != nil {
-		return false, errors.Wrap(err, "could not get enabled stated")
+		util.HandleResponseError(s, res.GetErrorReponse())
+
+		return false, nil
 	}
 
 	return res.Value.(bool), nil
 }
 
 func (e *Element) IsSelected(s *session.Session) (bool, error) {
-	if err := e.setElementID(s); err != nil {
+	if err := e.setElementID(); err != nil {
 		return false, errors.Wrap(err, "failed to set element's webID")
 	}
 
@@ -57,7 +62,9 @@ func (e *Element) IsSelected(s *session.Session) (bool, error) {
 		e,
 	)
 	if err != nil {
-		return false, errors.Wrap(err, "could not get selected state")
+		util.HandleResponseError(s, res.GetErrorReponse())
+
+		return false, nil
 	}
 
 	return res.Value.(bool), nil

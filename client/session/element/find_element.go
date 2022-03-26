@@ -1,35 +1,41 @@
 package element
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
 
 	"github.com/pkg/errors"
 	"github.com/theRealAlpaca/go-selenium/api"
-	"github.com/theRealAlpaca/go-selenium/client/session"
+	"github.com/theRealAlpaca/go-selenium/util"
 )
 
-func (e *Element) FindElement(s *session.Session) (string, error) {
-	res, err := api.ExecuteRequestRaw(
+func (e *Element) FindElement() (string, error) {
+	res, err := api.ExecuteRequest(
 		http.MethodPost,
-		fmt.Sprintf("/session/%s/element", s.ID),
-		s,
+		fmt.Sprintf("/session/%s/element", e.Session.ID),
+		e.Session,
 		e,
 	)
 	if err != nil {
-		return "", errors.Wrap(err, "failed to send request to get element")
+		errRes := res.GetErrorReponse()
+
+		if errRes == nil {
+			return "", errors.Wrap(err, "failed to find element")
+		}
+
+		if errRes.Error == api.NoSuchElement && e.IgnoreNotFound {
+			return "", nil
+		}
+
+		util.HandleResponseError(e.Session, errRes)
 	}
 
-	var response struct {
-		Value map[string]string `json:"value"`
+	v, ok := res.Value.(map[string]string)
+	if !ok {
+		return "", errors.New("failed to find element")
 	}
 
-	if err := json.Unmarshal(res, &response); err != nil {
-		return "", errors.Wrap(err, "failed to unmarshal response")
-	}
-
-	for _, v := range response.Value {
+	for _, v := range v {
 		if v != "" {
 			return v, nil
 		}

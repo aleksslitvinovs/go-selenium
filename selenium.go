@@ -6,36 +6,49 @@ import (
 	"syscall"
 
 	"github.com/pkg/errors"
+
 	"github.com/theRealAlpaca/go-selenium/client"
 	"github.com/theRealAlpaca/go-selenium/client/session"
 	"github.com/theRealAlpaca/go-selenium/config"
+	"github.com/theRealAlpaca/go-selenium/driver"
+	"github.com/theRealAlpaca/go-selenium/logger"
 )
+
+type Opts struct {
+	ConfigPath string
+}
 
 // Start starts browser driver server and establishes WebDriver session that
 // is returned.
-func Start() (*session.Session, error) {
+func Start(d *driver.Driver, opts *Opts) *session.Session {
+	if opts == nil {
+		opts = &Opts{ConfigPath: ""}
+	}
+
+	client.SetDriver(d)
+
 	c := client.Client
 
 	go gracefulShutdown()
 
-	conf, err := config.ReadConfig()
+	err := config.ReadConfig(opts.ConfigPath)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to read config")
+		panic(errors.Wrap(err, "failed to read config"))
 	}
 
-	c.Config = conf
+	logger.SetStringLogLevel(config.Config.LogLevel)
 
-	err = c.Driver.Launch()
+	err = c.Driver.Start()
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to launch driver")
+		panic(errors.Wrap(err, "failed to launch driver"))
 	}
 
 	session, err := client.StartNewSession()
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to start session")
+		panic(errors.Wrap(err, "failed to start session"))
 	}
 
-	return session, nil
+	return session
 }
 
 func gracefulShutdown() {
@@ -45,13 +58,5 @@ func gracefulShutdown() {
 
 	<-stop
 
-	if err := client.Stop(); err != nil {
-		panic(errors.Wrap(err, "failed to stop client"))
-	}
-
 	os.Exit(0)
 }
-
-// TODO: Read selenium.json config.
-//nolint: unused,deadcode
-func readConfig() {}

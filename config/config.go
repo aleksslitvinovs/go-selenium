@@ -2,62 +2,84 @@ package config
 
 import (
 	"encoding/json"
-	"fmt"
 	"os"
 
 	"github.com/pkg/errors"
+
+	"github.com/theRealAlpaca/go-selenium/logger"
 )
 
 //nolint:tagliatelle
-type Config struct {
-	Logging                      []string `json:"logging"`
-	SoftAsserts                  bool     `json:"soft_asserts"`
-	RaiseErrorsAutomaticatically bool     `json:"raise_errors_automaticially"`
+type config struct {
+	LogLevel                     string `json:"logging"`
+	SoftAsserts                  bool   `json:"soft_asserts"`
+	RaiseErrorsAutomaticatically bool   `json:"raise_errors_automaticially"`
 }
 
-const defaultFilename = "goseleniumrc.json"
+var Config = &config{LogLevel: "info"}
+
+const defaultConfigPath = "goseleniumrc.json"
 
 // ReadConfig reads the config file and returns a Config struct.
-func ReadConfig() (*Config, error) {
-	_, err := os.Stat(defaultFilename)
+func ReadConfig(configPath string) error {
+	if configPath == "" {
+		configPath = defaultConfigPath
+	}
+
+	_, err := os.Stat(configPath)
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
-			fmt.Println("No config file found. Using default config.")
+			logger.Info(
+				"No config file found. Will create and use default config.",
+			)
 
-			conf, err := createDefaultConfig()
+			c, err := createDefaultConfig()
 			if err != nil {
-				return nil, errors.Wrap(err, "failed to create default config")
+				panic(errors.Wrap(err, "failed to create default config"))
 			}
 
-			return conf, nil
+			Config = c
+
+			return nil
 		}
 
 		panic(err)
 	}
 
-	data, err := os.ReadFile(defaultFilename)
+	c, err := readConfigFromFile(configPath)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to read config file")
+		panic(err)
 	}
 
-	var c Config
+	Config = c
+
+	return nil
+}
+
+func readConfigFromFile(configPath string) (*config, error) {
+	data, err := os.ReadFile(configPath)
+	if err != nil {
+		return Config, errors.Wrap(err, "failed to read config file")
+	}
+
+	var c config
 
 	if err := json.Unmarshal(data, &c); err != nil {
-		return nil, errors.Wrap(err, "failed to parse config file")
+		return Config, errors.Wrap(err, "failed to parse config file")
 	}
 
 	return &c, nil
 }
-
-func createDefaultConfig() (*Config, error) {
-	f, err := os.Create(defaultFilename)
+func createDefaultConfig() (*config, error) {
+	f, err := os.Create(defaultConfigPath)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create config file")
 	}
+
 	defer f.Close()
 
-	c := Config{
-		Logging:                      []string{"Asserts"},
+	c := &config{
+		LogLevel:                     "info",
 		SoftAsserts:                  false,
 		RaiseErrorsAutomaticatically: true,
 	}
@@ -72,5 +94,5 @@ func createDefaultConfig() (*Config, error) {
 		return nil, errors.Wrap(err, "failed to write config")
 	}
 
-	return &c, nil
+	return c, nil
 }

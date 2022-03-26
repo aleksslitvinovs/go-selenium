@@ -9,6 +9,7 @@ import (
 	"net/http"
 
 	"github.com/pkg/errors"
+	"github.com/theRealAlpaca/go-selenium/logger"
 )
 
 // Describes possible response status code classes.
@@ -21,60 +22,11 @@ const (
 	classServerError
 )
 
+var FailedRequestErr = errors.New("failed to execute request")
+
 type Requester interface {
 	GetURL() string
 	GetPort() int
-}
-
-type Response struct {
-	Value interface{} `json:"value"`
-}
-
-type ErrorResponse struct {
-	Error   string `json:"error"`
-	Message string `json:"message"`
-}
-
-func (r *Response) String() string {
-	switch v := r.Value.(type) {
-	case ErrorResponse:
-		return fmt.Sprintf(
-			`"error": %q, "message": %q`,
-			v.Error, v.Message,
-		)
-	default:
-		return fmt.Sprintf(`"value": %q`, r.Value)
-	}
-}
-
-func (r *Response) UnmarshalJSON(data []byte) error {
-	var res struct {
-		Value interface{} `json:"value"`
-	}
-
-	err := json.Unmarshal(data, &res)
-	if err != nil {
-		return errors.Wrap(err, "failed to unmarshal response")
-	}
-
-	if _, ok := res.Value.(map[string]interface{}); ok {
-		var errResponse struct {
-			Value ErrorResponse `json:"value"`
-		}
-
-		err = json.Unmarshal(data, &errResponse)
-		if err != nil {
-			return errors.Wrap(err, "failed to unmarshal error response")
-		}
-
-		r.Value = errResponse.Value
-
-		return nil
-	}
-
-	r.Value = res.Value
-
-	return nil
 }
 
 func ExecuteRequestRaw(
@@ -94,16 +46,13 @@ func ExecuteRequestRaw(
 		return nil, errors.Wrap(err, "failed to create request")
 	}
 
-	// TODO: Do optional request logging
-	fmt.Printf("Request %q %q'\n", method, url)
-	fmt.Printf("Request body: %s\n", body)
+	logger.Debugf("Request: %q '%q'\n\t%s", method, url, body)
 
-	client := http.Client{}
-
-	res, err := client.Do(req)
+	res, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to send request")
 	}
+
 	defer res.Body.Close()
 
 	b, err := io.ReadAll(res.Body)
@@ -113,18 +62,17 @@ func ExecuteRequestRaw(
 
 	var response Response
 
+	// Unmarshaling is needed to format errors
 	err = json.Unmarshal(b, &response)
 	if err != nil {
 		return []byte{}, errors.Wrap(err, "failed to unmarshal response")
 	}
 
-	fmt.Println("Raw response", string(b))
-
 	if getStatusClass(res.StatusCode) != classSuccessful {
-		return nil, errors.Errorf(
-			"failed to execute request, response body {%s}", response.String(),
-		)
+		return b, errors.Wrap(FailedRequestErr, response.String())
 	}
+
+	logger.Debugf("Response: %s", string(b))
 
 	return b, nil
 }
@@ -132,21 +80,41 @@ func ExecuteRequestRaw(
 func ExecuteRequest(
 	method, route string, r Requester, payload interface{},
 ) (*Response, error) {
-	res, err := ExecuteRequestRaw(method, route, r, payload)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to execute request")
+	res, reqErr := ExecuteRequestRaw(method, route, r, payload)
+	if reqErr != nil {
+		if !errors.As(reqErr, &FailedRequestErr) {
+			return nil, errors.Wrap(reqErr, "failed to execute request")
+		}
 	}
 
 	var response Response
 
-	err = json.Unmarshal(res, &response)
+	err := json.Unmarshal(res, &response)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to unmarshal response")
+	}
+
+	if reqErr != nil {
+		return &response, reqErr
 	}
 
 	return &response, nil
 }
 
+func ExecuteRequestCustom(
+	method, route string, r Requester, payload, customResponse interface{},
+) error {
+	res, err := ExecuteRequestRaw(method, route, r, payload)
+	if err != nil {
+		return errors.Wrap(err, "failed to execute request")
+	}
+
+	if err := json.Unmarshal(res, customResponse); err != nil {
+		return errors.Wrap(err, "failed to unmarshal response")
+	}
+
+	return nil
+}
 func getStatusClass(code int) int {
 	class := code / 100
 	switch class {

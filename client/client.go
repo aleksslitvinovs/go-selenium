@@ -1,22 +1,19 @@
 package client
 
 import (
-	"encoding/json"
 	"fmt"
-	"net/http"
-	"strings"
+	"os"
 	"time"
 
 	"github.com/pkg/errors"
-	"github.com/theRealAlpaca/go-selenium/api"
 	"github.com/theRealAlpaca/go-selenium/client/session"
 	"github.com/theRealAlpaca/go-selenium/config"
 	"github.com/theRealAlpaca/go-selenium/driver"
+	"github.com/theRealAlpaca/go-selenium/logger"
 )
 
 type client struct {
 	Driver   *driver.Driver
-	Config   *config.Config
 	Error    error
 	Sessions map[*session.Session]bool
 }
@@ -31,10 +28,8 @@ func (c *client) GetPort() int {
 	return Client.Driver.Port
 }
 
-func NewClient(d *driver.Driver) *client {
+func SetDriver(d *driver.Driver) {
 	Client.Driver = d
-
-	return Client
 }
 
 func StartNewSession() (*session.Session, error) {
@@ -44,38 +39,14 @@ func StartNewSession() (*session.Session, error) {
 		)
 	}
 
-	req := struct {
-		Capabilities map[string]interface{} `json:"capabilities"`
-	}{
-		make(map[string]interface{}),
-	}
-
-	res, err := api.ExecuteRequestRaw(http.MethodPost, "/session", Client, req)
+	s, err := session.NewSession(Client)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to start session")
+		return nil, errors.Wrap(err, "failed to start new session")
 	}
 
-	var r struct {
-		Value struct {
-			SessionID    string                 `json:"sessionId"`
-			Capabilities map[string]interface{} `json:"capabilities"`
-		} `json:"value"`
-	}
+	Client.Sessions[s] = true
 
-	if err := json.Unmarshal(res, &r); err != nil {
-		return nil, errors.Wrap(err, "failed to unmarshal response")
-	}
-
-	session := &session.Session{
-		Config: Client.Config,
-		URL:    Client.Driver.RemoteURL,
-		Port:   Client.Driver.Port,
-		ID:     r.Value.SessionID,
-	}
-
-	Client.Sessions[session] = true
-
-	return session, nil
+	return s, nil
 }
 
 func DeleteSession(s *session.Session) error {
@@ -88,16 +59,18 @@ func DeleteSession(s *session.Session) error {
 	return nil
 }
 
-func Stop() error {
+func Stop() {
+	exitCode := 0
+
 	// Driver must be stopped even if session cannot be deleted.
-	defer func() error {
+	defer func() {
 		err := Client.Driver.Stop()
 		if err != nil {
-			return errors.Wrap(err, "failed to stop driver")
+			panic(errors.Wrap(err, "failed to stop driver"))
 		}
 
-		return nil
-	}() //nolint:errcheck
+		os.Exit(exitCode)
+	}()
 
 	for s, v := range Client.Sessions {
 		if !v {
@@ -106,17 +79,23 @@ func Stop() error {
 
 		err := s.DeleteSession()
 		if err != nil {
-			return errors.Wrap(err, "failed to stop session")
+			logger.Error(err.Error())
+
+			exitCode = 1
 		}
 
-		if Client.Config.RaiseErrorsAutomaticatically {
-			fmt.Println(s.RaiseErrors())
+		if config.Config.RaiseErrorsAutomaticatically {
+			e := s.RaiseErrors()
+
+			if e != "" {
+				logger.Error(e)
+
+				exitCode = 1
+			}
 		}
 
 		delete(Client.Sessions, s)
 	}
-
-	return nil
 }
 
 func (c *client) RaiseErrors() {
@@ -128,8 +107,7 @@ func (c *client) RaiseErrors() {
 		}
 
 		fmt.Printf(
-			"Errors occurred in session %s: \n%s\n",
-			s.ID, strings.Join(errors, "\n"),
+			"Errors occurred in %s session:\n%s\n", s.ID, errors,
 		)
 	}
 }
@@ -144,7 +122,7 @@ func waitUntilIsReady(timeout time.Duration) error {
 			)
 		}
 
-		ok, err := IsReady()
+		ok, err := driver.IsReady(Client)
 		if err != nil {
 			fmt.Println(err.Error())
 
