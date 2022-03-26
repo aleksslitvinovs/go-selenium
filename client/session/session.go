@@ -56,8 +56,8 @@ func NewSession(c api.Requester) (*Session, error) {
 	}
 
 	return session, nil
-
 }
+
 func (s *Session) DeleteSession() error {
 	_, err := api.ExecuteRequest(
 		http.MethodDelete,
@@ -93,10 +93,7 @@ func (s *Session) RaiseErrors() string {
 
 	errors := make([]string, 0, len(s.Errors))
 
-	for _, e := range s.Errors {
-		errors = append(errors, e)
-	}
+	errors = append(errors, s.Errors...)
 
 	return strings.Join(errors, "\n")
-
 }

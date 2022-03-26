@@ -5,7 +5,6 @@ import (
 	"os"
 
 	"github.com/pkg/errors"
-
 	"github.com/theRealAlpaca/go-selenium/logger"
 )
 

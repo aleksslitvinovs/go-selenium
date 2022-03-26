@@ -27,9 +27,7 @@ func NewElement(s *session.Session, selectorType, selector string) *Element {
 }
 
 func (e *Element) GetText(s *session.Session) (string, error) {
-	if err := e.setElementID(); err != nil {
-		return "", errors.Wrap(err, "failed to set element's webID")
-	}
+	e.setElementID()
 
 	res, err := api.ExecuteRequest(
 		http.MethodGet,
@@ -50,9 +48,7 @@ func (e *Element) GetText(s *session.Session) (string, error) {
 }
 
 func (e *Element) Click(s *session.Session) error {
-	if err := e.setElementID(); err != nil {
-		return errors.Wrap(err, "failed to set element's webID")
-	}
+	e.setElementID()
 
 	res, err := api.ExecuteRequest(
 		http.MethodPost,
@@ -72,32 +68,39 @@ func (e *Element) Click(s *session.Session) error {
 	return nil
 }
 
-func (e *Element) SendKeys(s *session.Session, input string) error {
-	if err := e.setElementID(); err != nil {
-		return errors.Wrap(err, "failed to set element's webID")
-	}
+func (e *Element) SendKeys(s *session.Session, input string) {
+	e.setElementID()
 
 	payload := struct {
 		Text string `json:"text"`
 	}{input}
 
-	_, err := api.ExecuteRequest(
+	res, err := api.ExecuteRequest(
 		http.MethodPost,
 		fmt.Sprintf("/session/%s/element/%s/value", s.ID, e.webID),
 		s,
 		payload,
 	)
 	if err != nil {
-		return errors.Wrap(err, "failed to send request to send keys")
-	}
+		errRes := res.GetErrorReponse()
+		if errRes == nil {
+			util.HandleError(
+				s, errors.Wrap(err, "failed to send keys to element"),
+			)
 
-	return nil
+			return
+		}
+
+		if errRes.Error == api.NoSuchElement && e.IgnoreNotFound {
+			return
+		}
+
+		util.HandleResponseError(s, errRes)
+	}
 }
 
 func (e *Element) Clear(s *session.Session) error {
-	if err := e.setElementID(); err != nil {
-		return errors.Wrap(err, "failed to set element's webID")
-	}
+	e.setElementID()
 
 	_, err := api.ExecuteRequest(
 		http.MethodPost,
@@ -112,9 +115,9 @@ func (e *Element) Clear(s *session.Session) error {
 	return nil
 }
 
-func (e *Element) setElementID() error {
+func (e *Element) setElementID() {
 	if e.webID != "" {
-		return nil
+		return
 	}
 
 	id, err := e.FindElement()
@@ -123,6 +126,4 @@ func (e *Element) setElementID() error {
 	}
 
 	e.webID = id
-
-	return nil
 }

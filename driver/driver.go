@@ -10,10 +10,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/pkg/errors"
 	"github.com/theRealAlpaca/go-selenium/api"
 	"github.com/theRealAlpaca/go-selenium/logger"
-
-	"github.com/pkg/errors"
 )
 
 type Opts struct {
@@ -29,7 +28,9 @@ type Driver struct {
 	cmd           *exec.Cmd
 }
 
-func NewDriver(webdriverPath string, port int, remoteURL string, opts *Opts) *Driver {
+func NewDriver(
+	webdriverPath string, port int, remoteURL string, opts *Opts,
+) *Driver {
 	return &Driver{
 		WebdriverPath: webdriverPath,
 		Port:          port,
@@ -116,7 +117,7 @@ func printLogs(ready chan<- bool, d *Driver, output io.ReadCloser) {
 				d.Port,
 			)
 
-			d.Stop()
+			d.Stop() //nolint:errcheck
 		}
 
 		// TODO: Add handling for FF

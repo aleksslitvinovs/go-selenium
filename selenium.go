@@ -6,7 +6,6 @@ import (
 	"syscall"
 
 	"github.com/pkg/errors"
-
 	"github.com/theRealAlpaca/go-selenium/client"
 	"github.com/theRealAlpaca/go-selenium/client/session"
 	"github.com/theRealAlpaca/go-selenium/config"

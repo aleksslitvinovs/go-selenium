@@ -4,16 +4,13 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/pkg/errors"
 	"github.com/theRealAlpaca/go-selenium/api"
 	"github.com/theRealAlpaca/go-selenium/client/session"
 	"github.com/theRealAlpaca/go-selenium/util"
 )
 
 func (e *Element) IsVisible(s *session.Session) (bool, error) {
-	if err := e.setElementID(); err != nil {
-		return false, errors.Wrap(err, "failed to set element's webID")
-	}
+	e.setElementID()
 
 	res, err := api.ExecuteRequest(
 		http.MethodGet,
@@ -24,16 +21,14 @@ func (e *Element) IsVisible(s *session.Session) (bool, error) {
 	if err != nil {
 		util.HandleResponseError(s, res.GetErrorReponse())
 
-		return false, nil
+		return false, nil //nolint:nilerr
 	}
 
 	return res.Value.(bool), nil
 }
 
 func (e *Element) IsEnabled(s *session.Session) (bool, error) {
-	if err := e.setElementID(); err != nil {
-		return false, errors.Wrap(err, "failed to set element's webID")
-	}
+	e.setElementID()
 
 	res, err := api.ExecuteRequest(
 		http.MethodGet,
@@ -44,16 +39,14 @@ func (e *Element) IsEnabled(s *session.Session) (bool, error) {
 	if err != nil {
 		util.HandleResponseError(s, res.GetErrorReponse())
 
-		return false, nil
+		return false, nil //nolint:nilerr
 	}
 
 	return res.Value.(bool), nil
 }
 
 func (e *Element) IsSelected(s *session.Session) (bool, error) {
-	if err := e.setElementID(); err != nil {
-		return false, errors.Wrap(err, "failed to set element's webID")
-	}
+	e.setElementID()
 
 	res, err := api.ExecuteRequest(
 		http.MethodGet,
@@ -64,7 +57,7 @@ func (e *Element) IsSelected(s *session.Session) (bool, error) {
 	if err != nil {
 		util.HandleResponseError(s, res.GetErrorReponse())
 
-		return false, nil
+		return false, nil //nolint:nilerr
 	}
 
 	return res.Value.(bool), nil

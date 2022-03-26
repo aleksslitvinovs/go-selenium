@@ -75,7 +75,9 @@ func waitCondition(
 
 		actual, err := condition(w.e.Session)
 		if err != nil {
-			util.HandleError(w.e.Session, errors.Wrap(err, "could not get condition"))
+			util.HandleError(
+				w.e.Session, errors.Wrap(err, "could not get condition"),
+			)
 		}
 
 		if actual == expected {

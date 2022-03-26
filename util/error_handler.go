@@ -14,7 +14,7 @@ func HandleError(s *session.Session, err error) {
 		return
 	}
 
-	if !errors.As(err, api.FailedRequestErr) {
+	if !errors.As(err, api.ErrFailedRequest) {
 		panic(err)
 	}
 
@@ -33,7 +33,6 @@ func HandleError(s *session.Session, err error) {
 	}
 
 	client.Stop()
-
 }
 func HandleResponseError(s *session.Session, res *api.ErrorResponse) {
 	if res == nil {

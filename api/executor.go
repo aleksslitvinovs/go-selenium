@@ -22,7 +22,7 @@ const (
 	classServerError
 )
 
-var FailedRequestErr = errors.New("failed to execute request")
+var ErrFailedRequest = errors.New("failed to execute request")
 
 type Requester interface {
 	GetURL() string
@@ -69,7 +69,7 @@ func ExecuteRequestRaw(
 	}
 
 	if getStatusClass(res.StatusCode) != classSuccessful {
-		return b, errors.Wrap(FailedRequestErr, response.String())
+		return b, errors.Wrap(ErrFailedRequest, response.String())
 	}
 
 	logger.Debugf("Response: %s", string(b))
@@ -82,7 +82,7 @@ func ExecuteRequest(
 ) (*Response, error) {
 	res, reqErr := ExecuteRequestRaw(method, route, r, payload)
 	if reqErr != nil {
-		if !errors.As(reqErr, &FailedRequestErr) {
+		if !errors.As(reqErr, &ErrFailedRequest) {
 			return nil, errors.Wrap(reqErr, "failed to execute request")
 		}
 	}

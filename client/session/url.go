@@ -6,6 +6,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/theRealAlpaca/go-selenium/api"
+	//nolint:godot,gci
 	// TODO: fix import cycle
 	// "github.com/theRealAlpaca/go-selenium/util"
 )

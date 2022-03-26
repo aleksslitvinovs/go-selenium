@@ -38,17 +38,17 @@ func main() {
 
 	fmt.Println(url)
 
-	element.NewElement(s, selectors.CSS, "test").FindElement()
+	// element.NewElement(s, selectors.CSS, "test").FindElement()
 
-	bodyElement := element.
-		NewElement(s, selectors.CSS, "body").
-		WaitFor(time.Second * 5).
-		UntilIsVisible()
+	// bodyElement := element.
+	// 	NewElement(s, selectors.CSS, "body").
+	// 	WaitFor(time.Second * 5).
+	// 	UntilIsVisible()
 
-	err = bodyElement.SendKeys(s, "Hello World")
-	if err != nil {
-		panic(err)
-	}
+	bodyElement := element.NewElement(s, selectors.CSS, "bodyr")
+	bodyElement.IgnoreNotFound = true
+
+	bodyElement.SendKeys(s, "Hello World")
 
 	clickButton := element.NewElement(s, selectors.CSS, "[type=submit]")
 	clickButton.WaitFor(time.Second * 5).UntilIsVisible().Click(s)
