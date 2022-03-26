@@ -29,6 +29,7 @@ linters:
   disable:
     - forbidigo # TODO: Enable when finished testing
     - revive # TODO: Write comments for all exported funcs
+    - forcetypeassert # TODO: Enable when finished testing
     - gomnd
     - gomoddirectives
     - nestif

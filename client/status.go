@@ -8,8 +8,10 @@ import (
 	"github.com/theRealAlpaca/go-selenium/api"
 )
 
-func (c *Client) IsReady() (bool, error) {
-	res, err := api.ExecuteRequestRaw(http.MethodGet, "/status", c, struct{}{})
+func IsReady() (bool, error) {
+	res, err := api.ExecuteRequestRaw(
+		http.MethodGet, "/status", Client, struct{}{},
+	)
 	if err != nil {
 		return false, errors.Wrap(err, "failed to get status")
 	}

@@ -18,16 +18,17 @@ func main() {
 		4444,
 		"http://localhost",
 	)
-	c := client.NewClient(d)
 
-	s, err := selenium.Start(c)
+	client.NewClient(d)
+
+	s, err := selenium.Start()
 	if err != nil {
 		panic(err)
 	}
 
 	defer func() {
 		// TODO: Kill GC after connection is closed
-		err = c.Stop()
+		err = client.Stop()
 		if err != nil {
 			panic(err)
 		}
@@ -55,24 +56,10 @@ func main() {
 	}
 
 	clickButton := element.NewElement(selectors.CSS, "[type=submit]")
-	clickButton.WaitFor(s, time.Second*5)
-	clickButton.Click(s)
+	clickButton.WaitFor(s, time.Second*5).UntilIsVisible().Click(s)
 
 	searchResultElement := element.NewElement(
 		selectors.CSS, "#r1-0 .result__title",
 	)
-	searchResultElement.WaitFor(s, time.Second*5).UntilIsVisible()
-
-	text, err := searchResultElement.GetText(s)
-	if err != nil {
-		panic(err)
-	}
-
-	fmt.Println(text)
-
-	s.Refresh()
-
-	if err != nil {
-		panic(err)
-	}
+	searchResultElement.WaitFor(s, time.Second*5).UntilIsSelected()
 }

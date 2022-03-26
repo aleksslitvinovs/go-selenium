@@ -6,12 +6,15 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/theRealAlpaca/go-selenium/api"
+	"github.com/theRealAlpaca/go-selenium/config"
 )
 
 type Session struct {
-	URL  string
-	Port int
-	ID   string
+	Config *config.Config
+	URL    string
+	Port   int
+	ID     string
+	Errors []error
 }
 
 func (s *Session) GetURL() string {
@@ -48,4 +51,18 @@ func (s *Session) Refresh() error {
 	}
 
 	return nil
+}
+
+func (s *Session) RaiseErrors() []string {
+	if len(s.Errors) == 0 {
+		return []string{}
+	}
+
+	errors := make([]string, 0, len(s.Errors))
+
+	for _, err := range s.Errors {
+		errors = append(errors, err.Error())
+	}
+
+	return errors
 }

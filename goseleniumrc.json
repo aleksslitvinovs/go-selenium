@@ -1,0 +1,7 @@
+{
+  "logging": [
+    "Asserts"
+  ],
+  "soft_asserts": false,
+  "raise_errors_automaticially": true
+}

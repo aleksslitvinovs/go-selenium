@@ -1,7 +1,6 @@
 package elements
 
 import (
-	"github.com/theRealAlpaca/go-selenium/client"
 	"github.com/theRealAlpaca/go-selenium/client/session/element"
 )
 
@@ -17,9 +16,4 @@ func NewElements(selectorType, selector string) *Elements {
 		SelectorType: selectorType,
 		Selector:     selector,
 	}
-}
-
-// TODO: Implement.
-func (ee *Elements) FindElements(c *client.Client) ([]string, error) {
-	return []string{}, nil
 }

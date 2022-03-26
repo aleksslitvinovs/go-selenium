@@ -8,19 +8,29 @@ import (
 	"github.com/pkg/errors"
 	"github.com/theRealAlpaca/go-selenium/client"
 	"github.com/theRealAlpaca/go-selenium/client/session"
+	"github.com/theRealAlpaca/go-selenium/config"
 )
 
 // Start starts browser driver server and establishes WebDriver session that
 // is returned.
-func Start(c *client.Client) (*session.Session, error) {
-	go gracefulShutdown(c)
+func Start() (*session.Session, error) {
+	c := client.Client
 
-	err := c.Driver.Launch()
+	go gracefulShutdown()
+
+	conf, err := config.ReadConfig()
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to read config")
+	}
+
+	c.Config = conf
+
+	err = c.Driver.Launch()
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to launch driver")
 	}
 
-	session, err := c.StartSession()
+	session, err := client.StartNewSession()
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to start session")
 	}
@@ -28,14 +38,14 @@ func Start(c *client.Client) (*session.Session, error) {
 	return session, nil
 }
 
-func gracefulShutdown(c *client.Client) {
-	exit := make(chan os.Signal, 1)
+func gracefulShutdown() {
+	var stop = make(chan os.Signal, 1)
 
-	signal.Notify(exit, syscall.SIGINT)
+	signal.Notify(stop, syscall.SIGINT)
 
-	<-exit
+	<-stop
 
-	if err := c.Stop(); err != nil {
+	if err := client.Stop(); err != nil {
 		panic(errors.Wrap(err, "failed to stop client"))
 	}
 
