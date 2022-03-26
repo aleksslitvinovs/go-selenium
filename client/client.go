@@ -65,7 +65,9 @@ func sessionListener(s *session.Session) {
 
 	delete(Client.Sessions, s)
 
-	Stop()
+	if len(Client.Sessions) == 0 {
+		Stop()
+	}
 }
 
 func DeleteSession(s *session.Session) error {

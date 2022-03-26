@@ -59,7 +59,7 @@ func NewSession(c api.Requester) (*Session, error) {
 }
 
 func (s *Session) Stop() {
-	s.DeleteSession() //nolint:errcheck
+	s.DeleteSession()
 }
 
 func (s *Session) DeleteSession() {
@@ -80,26 +80,6 @@ func (s *Session) DeleteSession() {
 	}
 
 	s.KillDriver <- struct{}{}
-
-	return
-}
-
-func (s *Session) Refresh() {
-	res, err := api.ExecuteRequest(
-		http.MethodPost,
-		fmt.Sprintf("/session/%s/refresh", s.ID),
-		s,
-		struct{}{},
-	)
-	if err != nil {
-		if errRes := res.GetErrorReponse(); errRes != nil {
-			util.HandleResponseError(s, errRes)
-
-			return
-		}
-
-		util.HandleError(s, errors.Wrap(err, "failed to refresh session"))
-	}
 }
 
 func (s *Session) RaiseErrors() string {

@@ -57,26 +57,12 @@ func (r *Response) UnmarshalJSON(data []byte) error {
 		Value interface{} `json:"value"`
 	}
 
-	err := json.Unmarshal(data, &res)
-	if err != nil {
+	if err := json.Unmarshal(data, &res); err != nil {
 		return errors.Wrap(err, "failed to unmarshal response")
 	}
 
-	if _, ok := res.Value.(map[string]string); ok {
-		var response struct {
-			Value ExpandedResponse `json:"value"`
-		}
-
-		if err := json.Unmarshal(data, &response); err != nil {
-			return errors.Wrap(err, "failed to unmarshal response")
-		}
-
-		r.Value = response.Value
-
-		return nil
-	}
-
-	if values, ok := res.Value.(map[string]interface{}); ok {
+	switch values := res.Value.(type) {
+	case map[string]interface{}:
 		for k, v := range values {
 			if strings.HasPrefix(k, "element") {
 				r.Value = map[string]string{k: v.(string)}
@@ -89,17 +75,26 @@ func (r *Response) UnmarshalJSON(data []byte) error {
 			Value ErrorResponse `json:"value"`
 		}
 
-		err = json.Unmarshal(data, &errResponse)
-		if err != nil {
+		if err := json.Unmarshal(data, &errResponse); err != nil {
 			return errors.Wrap(err, "failed to unmarshal error response")
 		}
 
 		r.Value = errResponse.Value
 
 		return nil
-	}
+	case []interface{}:
+		var response struct {
+			Value []interface{} `json:"value"`
+		}
 
-	r.Value = res.Value
+		if err := json.Unmarshal(data, &response); err != nil {
+			return errors.Wrap(err, "failed to unmarshal response")
+		}
+
+		r.Value = response.Value
+	default:
+		r.Value = res.Value
+	}
 
 	return nil
 }
