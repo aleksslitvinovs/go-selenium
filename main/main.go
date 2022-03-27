@@ -9,7 +9,6 @@ import (
 
 //nolint:errcheck
 func main() {
-
 	s := selenium.Start(nil)
 
 	defer client.Stop()
