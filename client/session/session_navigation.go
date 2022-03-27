@@ -29,6 +29,7 @@ type Navigator interface {
 	GetTitle() string
 }
 
+// OpenURL opens a new window with the given URL.
 func (s *Session) OpenURL(url string) {
 	requestBody := struct {
 		URL string `json:"url"`
@@ -51,6 +52,7 @@ func (s *Session) OpenURL(url string) {
 	}
 }
 
+// GetCurrentURL returns the current URL of the browsing context.
 func (s *Session) GetCurrentURL() string {
 	res, err := api.ExecuteRequestVoid(
 		http.MethodGet,
@@ -70,6 +72,7 @@ func (s *Session) GetCurrentURL() string {
 	return res.Value.(string)
 }
 
+// Refresh refreshes the current page.
 func (s *Session) Refresh() {
 	res, err := api.ExecuteRequestVoid(
 		http.MethodPost,
@@ -87,6 +90,7 @@ func (s *Session) Refresh() {
 	}
 }
 
+// Back navigates back in the browser history.
 func (s *Session) Back() {
 	res, err := api.ExecuteRequestVoid(
 		http.MethodPost,
@@ -104,6 +108,7 @@ func (s *Session) Back() {
 	}
 }
 
+// Forward navigates forward in the browser history.
 func (s *Session) Forward() {
 	res, err := api.ExecuteRequestVoid(
 		http.MethodPost,
@@ -121,6 +126,7 @@ func (s *Session) Forward() {
 	}
 }
 
+// GetTitle returns the current page title.
 func (s *Session) GetTitle() string {
 	res, err := api.ExecuteRequestVoid(
 		http.MethodGet,

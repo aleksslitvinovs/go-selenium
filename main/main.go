@@ -4,14 +4,13 @@ import (
 	"time"
 
 	"github.com/theRealAlpaca/go-selenium"
-	"github.com/theRealAlpaca/go-selenium/client"
 )
 
 //nolint:errcheck
 func main() {
-	s := selenium.Start(nil)
+	c, s := selenium.Start(nil)
 
-	defer client.Stop()
+	defer c.Stop()
 
 	// s.OpenURL("https://app.stage.loadero.com/login")
 	s.Navigation.OpenURL("https://app.stage.loadero.com/login")

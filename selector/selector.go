@@ -1,4 +1,4 @@
-package selectors
+package selector
 
 const (
 	CSS             = "css selector"

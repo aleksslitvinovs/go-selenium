@@ -12,74 +12,75 @@ import (
 	"github.com/theRealAlpaca/go-selenium/logger"
 )
 
-type client struct {
+type Client struct {
 	Driver   *driver.Driver
-	Error    error
 	Sessions map[*session.Session]bool
 }
 
 var (
-	Client = &client{Sessions: make(map[*session.Session]bool)}
-	done   = make(chan struct{})
+	done = make(chan struct{})
 )
 
-func (c *client) GetURL() string {
-	return Client.Driver.RemoteURL
+func NewClient(d *driver.Driver) *Client {
+	if d == nil {
+		panic("driver cannot be nil")
+	}
+
+	return &Client{
+		Driver:   d,
+		Sessions: make(map[*session.Session]bool),
+	}
 }
 
-func (c *client) GetPort() int {
-	return Client.Driver.Port
+func (c *Client) GetURL() string {
+	return c.Driver.RemoteURL
 }
 
-func StartNewSession() (*session.Session, error) {
-	if err := waitUntilIsReady(10 * time.Second); err != nil {
+func (c *Client) GetPort() int {
+	return c.Driver.Port
+}
+
+func (c *Client) StartNewSession() (*session.Session, error) {
+	if err := c.waitUntilIsReady(10 * time.Second); err != nil {
 		return &session.Session{}, errors.Wrap(
 			err, "driver is not ready to start a new session",
 		)
 	}
 
-	s, err := session.NewSession(Client)
+	s, err := session.NewSession(c)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to start new session")
 	}
 
 	s.KillDriver = done
 
-	Client.Sessions[s] = true
+	c.Sessions[s] = true
 
-	go sessionListener(s)
+	go c.sessionListener(s)
 
 	return s, nil
 }
 
-func sessionListener(s *session.Session) {
-	if len(Client.Sessions) == 0 {
-		Stop()
+func (c *Client) sessionListener(s *session.Session) {
+	if len(c.Sessions) == 0 {
+		c.Stop()
 	}
 
 	<-s.KillDriver
 
-	delete(Client.Sessions, s)
+	delete(c.Sessions, s)
 
-	if len(Client.Sessions) == 0 {
-		Stop()
+	if len(c.Sessions) == 0 {
+		c.Stop()
 	}
 }
 
-func DeleteSession(s *session.Session) error {
-	s.DeleteSession()
-
-	delete(Client.Sessions, s)
-
-	return nil
-}
-
-func Stop() {
+func (c *Client) Stop() {
 	exitCode := 0
 
 	// Driver must be stopped even if session cannot be deleted.
 	defer func() {
-		err := Client.Driver.Stop()
+		err := c.Driver.Stop()
 		if err != nil {
 			panic(errors.Wrap(err, "failed to stop driver"))
 		}
@@ -87,7 +88,7 @@ func Stop() {
 		os.Exit(exitCode)
 	}()
 
-	for s, v := range Client.Sessions {
+	for s, v := range c.Sessions {
 		if !v {
 			continue
 		}
@@ -108,11 +109,11 @@ func Stop() {
 			}
 		}
 
-		delete(Client.Sessions, s)
+		delete(c.Sessions, s)
 	}
 }
 
-func (c *client) RaiseErrors() {
+func (c *Client) RaiseErrors() {
 	for s := range c.Sessions {
 		errors := s.RaiseErrors()
 
@@ -126,7 +127,7 @@ func (c *client) RaiseErrors() {
 	}
 }
 
-func waitUntilIsReady(timeout time.Duration) error {
+func (c *Client) waitUntilIsReady(timeout time.Duration) error {
 	endTime := time.Now().Add(timeout)
 
 	for {
@@ -136,7 +137,7 @@ func waitUntilIsReady(timeout time.Duration) error {
 			)
 		}
 
-		ok, err := driver.IsReady(Client)
+		ok, err := driver.IsReady(c)
 		if err != nil {
 			fmt.Println(err.Error())
 

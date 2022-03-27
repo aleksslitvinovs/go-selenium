@@ -17,43 +17,48 @@ type Opts struct {
 	ConfigPath string
 }
 
-// Start starts browser driver server and establishes WebDriver session that
-// is returned.
-func Start(opts *Opts) *session.Session {
+var started = false
+
+// Start creates a new client instances, starts browser driver server and
+// establishes new WebDriver session. Returns a new client instance and the
+// established connection.
+func Start(opts *Opts) (*client.Client, *session.Session) {
 	if opts == nil {
 		opts = &Opts{}
 	}
 
-	c := client.Client
+	if !started {
+		go gracefulShutdown()
 
-	go gracefulShutdown()
+		err := config.ReadConfig(opts.ConfigPath)
+		if err != nil {
+			panic(errors.Wrap(err, "failed to read config"))
+		}
 
-	err := config.ReadConfig(opts.ConfigPath)
-	if err != nil {
-		panic(errors.Wrap(err, "failed to read config"))
+		logger.SetLogLevel(config.Config.LogLevel)
+
+		started = true
 	}
-
-	logger.SetStringLogLevel(config.Config.LogLevel)
 
 	d, err := driver.Start(config.Config.WebDriver)
 	if err != nil {
 		panic(errors.Wrap(err, "failed to launch driver"))
 	}
 
-	c.Driver = d
+	c := client.NewClient(d)
 
-	session, err := client.StartNewSession()
+	session, err := c.StartNewSession()
 	if err != nil {
 		panic(errors.Wrap(err, "failed to start session"))
 	}
 
-	return session
+	return c, session
 }
 
 func gracefulShutdown() {
 	var stop = make(chan os.Signal, 1)
 
-	signal.Notify(stop, syscall.SIGINT)
+	signal.Notify(stop, syscall.SIGTERM, syscall.SIGINT)
 
 	<-stop
 

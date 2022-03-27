@@ -2,9 +2,16 @@
   "logging": "debug",
   "soft_asserts": false,
   "raise_errors_automatically": true,
+  "element_settings": {
+    "ignore_not_found": false,
+    "retry_timeout": 0,
+    "poll_interval": 0,
+    "selector_type": ""
+  },
   "webdriver": {
     "path": "/Users/aleksslitvinovs/Downloads/chromedriver",
-    "port": 4444,
-    "url": "http://localhost"
+    "url": "",
+    "port": 0,
+    "timeout": 0
   }
 }

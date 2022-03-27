@@ -5,7 +5,8 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/theRealAlpaca/go-selenium/config"
-	"github.com/theRealAlpaca/go-selenium/selectors"
+	"github.com/theRealAlpaca/go-selenium/logger"
+	"github.com/theRealAlpaca/go-selenium/selector"
 )
 
 type Element struct {
@@ -22,11 +23,17 @@ var (
 	defaultElementSettings = &config.ElementSettings{
 		PollInterval: 500 * time.Millisecond,
 		RetryTimeout: 5 * time.Second,
-		SelectorType: selectors.CSS,
+		SelectorType: selector.CSS,
 	}
 )
 
 func (s *Session) NewElement(selector string) *Element {
+	if config.Config.ElementSettings.RetryTimeout.Milliseconds() == 0 {
+		logger.Error(`"retry_timeout" must not be 0`)
+
+		s.DeleteSession()
+	}
+
 	settings := config.Config.ElementSettings
 	if settings == nil {
 		settings = defaultElementSettings
@@ -45,9 +52,9 @@ func SetSettings(settings *config.ElementSettings) {
 }
 
 func UseCSS() {
-	defaultElementSettings.SelectorType = selectors.CSS
+	defaultElementSettings.SelectorType = selector.CSS
 }
 
 func UseXPath() {
-	defaultElementSettings.SelectorType = selectors.XPath
+	defaultElementSettings.SelectorType = selector.XPath
 }

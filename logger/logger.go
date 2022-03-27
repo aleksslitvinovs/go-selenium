@@ -9,6 +9,8 @@ import (
 	"github.com/fatih/color"
 )
 
+type LevelName string
+
 const (
 	DebugLvl LevelName = "debug"
 	InfoLvl  LevelName = "info"
@@ -23,13 +25,11 @@ type level struct {
 	format func(format string, a ...interface{}) string
 }
 
-type LevelName string
-
 var (
 	debug = level{DebugLvl, 0, color.CyanString}
 	info  = level{InfoLvl, 1, color.WhiteString}
 	warn  = level{WarnLvl, 2, color.YellowString}
-	err   = level{ErrorLvl, 3, color.RedString}
+	err   = level{ErrorLvl, 3, color.HiRedString}
 	fatal = level{FatalLvl, 4, color.HiRedString}
 
 	l = &logger{
@@ -43,16 +43,12 @@ type logger struct {
 	Level  level
 }
 
-func SetLogLevel(lvl level) {
-	l.Level = lvl
-}
-
-func SetStringLogLevel(lvl string) {
+func SetLogLevel(lvl LevelName) {
 	l.Level = parseLogLevel(lvl)
 }
 
-func parseLogLevel(lvl string) level {
-	l := strings.ToLower(lvl)
+func parseLogLevel(lvl LevelName) level {
+	l := string(lvl)
 
 	switch l {
 	case "debug":
@@ -69,6 +65,7 @@ func parseLogLevel(lvl string) level {
 		return info
 	}
 }
+
 func write(lvl level, msg string) {
 	if lvl.code < l.Level.code {
 		return

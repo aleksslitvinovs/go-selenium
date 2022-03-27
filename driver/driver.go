@@ -15,10 +15,6 @@ import (
 	"github.com/theRealAlpaca/go-selenium/logger"
 )
 
-type Opts struct {
-	Timeout time.Duration
-}
-
 // Driver resembles a browser driver and parameters to connect to it.
 type Driver struct {
 	WebDriverPath string

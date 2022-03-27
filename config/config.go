@@ -26,11 +26,13 @@ type WebDriverConfig struct {
 
 //nolint:tagliatelle
 type config struct {
-	LogLevel                 string           `json:"logging"`
+	LogLevel                 logger.LevelName `json:"logging"`
 	SoftAsserts              bool             `json:"soft_asserts"`
 	RaiseErrorsAutomatically bool             `json:"raise_errors_automatically"` //nolint:lll
 	ElementSettings          *ElementSettings `json:"element_settings,omitempty"` //nolint:lll
-	WebDriver                *WebDriverConfig `json:"webdriver,omitempty"`
+
+	// TODO: Allow running multiple drivers.
+	WebDriver *WebDriverConfig `json:"webdriver,omitempty"`
 }
 
 var Config = &config{LogLevel: "info"}
@@ -96,10 +98,14 @@ func createDefaultConfig() (*config, error) {
 
 	defer f.Close()
 
+	// TODO: implement automatic driver download.
+
 	c := &config{
-		LogLevel:                 string(logger.InfoLvl),
+		LogLevel:                 logger.InfoLvl,
 		SoftAsserts:              false,
 		RaiseErrorsAutomatically: true,
+		// ElementSettings:          &ElementSettings{},
+		// WebDriver:                &WebDriverConfig{},
 	}
 
 	data, err := json.MarshalIndent(c, "", "  ")
