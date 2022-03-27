@@ -1,5 +1,10 @@
 {
   "logging": "debug",
   "soft_asserts": false,
-  "raise_errors_automaticially": true
+  "raise_errors_automatically": true,
+  "webdriver": {
+    "path": "/Users/aleksslitvinovs/Downloads/chromedriver",
+    "port": 4444,
+    "url": "http://localhost"
+  }
 }

@@ -17,12 +17,20 @@ type ElementSettings struct {
 	SelectorType   string        `json:"selector_type"`
 }
 
+type WebDriverConfig struct {
+	PathToBinary string        `json:"path"`
+	URL          string        `json:"url"`
+	Port         int           `json:"port"`
+	Timeout      time.Duration `json:"timeout"`
+}
+
 //nolint:tagliatelle
 type config struct {
 	LogLevel                 string           `json:"logging"`
-	ElementSettings          *ElementSettings `json:"element_settings"`
 	SoftAsserts              bool             `json:"soft_asserts"`
 	RaiseErrorsAutomatically bool             `json:"raise_errors_automatically"` //nolint:lll
+	ElementSettings          *ElementSettings `json:"element_settings,omitempty"` //nolint:lll
+	WebDriver                *WebDriverConfig `json:"webdriver,omitempty"`
 }
 
 var Config = &config{LogLevel: "info"}
@@ -79,6 +87,7 @@ func readConfigFromFile(configPath string) (*config, error) {
 
 	return &c, nil
 }
+
 func createDefaultConfig() (*config, error) {
 	f, err := os.Create(defaultConfigPath)
 	if err != nil {
@@ -88,7 +97,7 @@ func createDefaultConfig() (*config, error) {
 	defer f.Close()
 
 	c := &config{
-		LogLevel:                 "info",
+		LogLevel:                 string(logger.InfoLvl),
 		SoftAsserts:              false,
 		RaiseErrorsAutomatically: true,
 	}

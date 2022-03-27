@@ -9,6 +9,26 @@ import (
 	"github.com/theRealAlpaca/go-selenium/util"
 )
 
+type Navigator interface {
+	// OpenURL opens a new window with the given URL.
+	OpenURL(url string)
+
+	// GetCurrentURL returns the current URL of the browsing context.
+	GetCurrentURL() string
+
+	// Refresh refreshes the current page.
+	Refresh()
+
+	// Back navigates back in the browser history.
+	Back()
+
+	// Forward navigates forward in the browser history.
+	Forward()
+
+	// GetTitle returns the current page title.
+	GetTitle() string
+}
+
 func (s *Session) OpenURL(url string) {
 	requestBody := struct {
 		URL string `json:"url"`
@@ -32,11 +52,10 @@ func (s *Session) OpenURL(url string) {
 }
 
 func (s *Session) GetCurrentURL() string {
-	res, err := api.ExecuteRequest(
+	res, err := api.ExecuteRequestVoid(
 		http.MethodGet,
 		fmt.Sprintf("/session/%s/url", s.ID),
 		s,
-		struct{}{},
 	)
 	if err != nil {
 		if errRes := res.GetErrorReponse(); errRes != nil {
@@ -52,11 +71,10 @@ func (s *Session) GetCurrentURL() string {
 }
 
 func (s *Session) Refresh() {
-	res, err := api.ExecuteRequest(
+	res, err := api.ExecuteRequestVoid(
 		http.MethodPost,
 		fmt.Sprintf("/session/%s/refresh", s.ID),
 		s,
-		struct{}{},
 	)
 	if err != nil {
 		if errRes := res.GetErrorReponse(); errRes != nil {
@@ -70,11 +88,10 @@ func (s *Session) Refresh() {
 }
 
 func (s *Session) Back() {
-	res, err := api.ExecuteRequest(
+	res, err := api.ExecuteRequestVoid(
 		http.MethodPost,
 		fmt.Sprintf("/session/%s/back", s.ID),
 		s,
-		struct{}{},
 	)
 	if err != nil {
 		if errRes := res.GetErrorReponse(); errRes != nil {
@@ -88,11 +105,10 @@ func (s *Session) Back() {
 }
 
 func (s *Session) Forward() {
-	res, err := api.ExecuteRequest(
+	res, err := api.ExecuteRequestVoid(
 		http.MethodPost,
 		fmt.Sprintf("/session/%s/forward", s.ID),
 		s,
-		struct{}{},
 	)
 	if err != nil {
 		if errRes := res.GetErrorReponse(); errRes != nil {
@@ -106,11 +122,10 @@ func (s *Session) Forward() {
 }
 
 func (s *Session) GetTitle() string {
-	res, err := api.ExecuteRequest(
+	res, err := api.ExecuteRequestVoid(
 		http.MethodGet,
 		fmt.Sprintf("/session/%s/title", s.ID),
 		s,
-		struct{}{},
 	)
 	if err != nil {
 		if errRes := res.GetErrorReponse(); errRes != nil {

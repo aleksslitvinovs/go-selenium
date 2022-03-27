@@ -31,10 +31,6 @@ func (c *client) GetPort() int {
 	return Client.Driver.Port
 }
 
-func SetDriver(d *driver.Driver) {
-	Client.Driver = d
-}
-
 func StartNewSession() (*session.Session, error) {
 	if err := waitUntilIsReady(10 * time.Second); err != nil {
 		return &session.Session{}, errors.Wrap(
@@ -98,7 +94,7 @@ func Stop() {
 
 		s.DeleteSession()
 
-		if len(s.Errors) != 0 {
+		if len(s.GetErrors()) != 0 {
 			exitCode = 1
 		}
 

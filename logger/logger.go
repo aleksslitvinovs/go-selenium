@@ -9,31 +9,41 @@ import (
 	"github.com/fatih/color"
 )
 
-type Level struct {
-	Name   string
+const (
+	DebugLvl LevelName = "debug"
+	InfoLvl  LevelName = "info"
+	WarnLvl  LevelName = "warn"
+	ErrorLvl LevelName = "error"
+	FatalLvl LevelName = "fatal"
+)
+
+type level struct {
+	name   LevelName
 	code   int
 	format func(format string, a ...interface{}) string
 }
 
+type LevelName string
+
 var (
-	DebugLvl = Level{"DEBUG", 0, color.CyanString}
-	InfoLvl  = Level{"INFO", 1, color.WhiteString}
-	WarnLvl  = Level{"WARN", 2, color.YellowString}
-	ErrorLvl = Level{"ERROR", 3, color.RedString}
-	FatalLvl = ErrorLvl
+	debug = level{DebugLvl, 0, color.CyanString}
+	info  = level{InfoLvl, 1, color.WhiteString}
+	warn  = level{WarnLvl, 2, color.YellowString}
+	err   = level{ErrorLvl, 3, color.RedString}
+	fatal = level{FatalLvl, 4, color.HiRedString}
 
 	l = &logger{
-		Level:  InfoLvl,
+		Level:  info,
 		Logger: log.New(os.Stdout, "", log.Ldate|log.Ltime),
 	}
 )
 
 type logger struct {
 	Logger *log.Logger
-	Level  Level
+	Level  level
 }
 
-func SetLogLevel(lvl Level) {
+func SetLogLevel(lvl level) {
 	l.Level = lvl
 }
 
@@ -41,72 +51,75 @@ func SetStringLogLevel(lvl string) {
 	l.Level = parseLogLevel(lvl)
 }
 
-func parseLogLevel(lvl string) Level {
+func parseLogLevel(lvl string) level {
 	l := strings.ToLower(lvl)
 
 	switch l {
 	case "debug":
-		return DebugLvl
+		return debug
 	case "info":
-		return InfoLvl
+		return info
 	case "warn":
-		return WarnLvl
+		return warn
 	case "error":
-		return ErrorLvl
+		return err
 	case "fatal":
-		return FatalLvl
+		return fatal
 	default:
-		return InfoLvl
+		return info
 	}
 }
-func write(lvl Level, msg string) {
+func write(lvl level, msg string) {
 	if lvl.code < l.Level.code {
 		return
 	}
 
-	l.Logger.Output(1, lvl.format("[%s]%s", lvl.Name, msg)) //nolint: errcheck
+	//nolint: errcheck
+	l.Logger.Output(
+		1, lvl.format("[%s]%s", strings.ToUpper(string(lvl.name)), msg),
+	)
 }
 
 func Debug(msg ...interface{}) {
-	write(DebugLvl, fmt.Sprint(msg...))
+	write(debug, fmt.Sprint(msg...))
 }
 
 func Debugf(msg string, v ...interface{}) {
-	write(DebugLvl, fmt.Sprintf(msg, v...))
+	write(debug, fmt.Sprintf(msg, v...))
 }
 
 func Info(msg ...interface{}) {
-	write(InfoLvl, fmt.Sprint(msg...))
+	write(info, fmt.Sprint(msg...))
 }
 
 func Infof(msg string, v ...interface{}) {
-	write(DebugLvl, fmt.Sprintf(msg, v...))
+	write(debug, fmt.Sprintf(msg, v...))
 }
 
 func Warn(msg ...interface{}) {
-	write(WarnLvl, fmt.Sprint(msg...))
+	write(warn, fmt.Sprint(msg...))
 }
 
 func Warnf(msg string, v ...interface{}) {
-	write(WarnLvl, fmt.Sprintf(msg, v...))
+	write(warn, fmt.Sprintf(msg, v...))
 }
 
 func Error(msg ...interface{}) {
-	write(ErrorLvl, fmt.Sprint(msg...))
+	write(err, fmt.Sprint(msg...))
 }
 
 func Errorf(msg string, v ...interface{}) {
-	write(ErrorLvl, fmt.Sprintf(msg, v...))
+	write(err, fmt.Sprintf(msg, v...))
 }
 
 func Fatal(msg ...interface{}) {
-	write(FatalLvl, fmt.Sprint(msg...))
+	write(fatal, fmt.Sprint(msg...))
 
 	os.Exit(1)
 }
 
 func Fatalf(msg string, v ...interface{}) {
-	write(FatalLvl, fmt.Sprintf(msg, v...))
+	write(fatal, fmt.Sprintf(msg, v...))
 
 	os.Exit(1)
 }

@@ -1,19 +1,18 @@
-package element
+package session
 
 import (
 	"time"
 
 	"github.com/pkg/errors"
-	"github.com/theRealAlpaca/go-selenium/client/session"
-	"github.com/theRealAlpaca/go-selenium/client/session/element/selectors"
 	"github.com/theRealAlpaca/go-selenium/config"
+	"github.com/theRealAlpaca/go-selenium/selectors"
 )
 
 type Element struct {
 	SelectorType string                  `json:"using"`
 	Selector     string                  `json:"value"`
 	Settings     *config.ElementSettings `json:"-"`
-	Session      *session.Session        `json:"-"`
+	Session      *Session                `json:"-"`
 	webID        string                  `json:"-"`
 }
 
@@ -27,7 +26,7 @@ var (
 	}
 )
 
-func NewElement(s *session.Session, selector string) *Element {
+func (s *Session) NewElement(selector string) *Element {
 	settings := config.Config.ElementSettings
 	if settings == nil {
 		settings = defaultElementSettings

@@ -1,4 +1,4 @@
-package commands
+package keys
 
 // Special keyboard keys, for SendKeys.
 // TODO: Check if these are correct.

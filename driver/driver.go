@@ -2,7 +2,6 @@ package driver
 
 import (
 	"bufio"
-	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -12,6 +11,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/theRealAlpaca/go-selenium/api"
+	"github.com/theRealAlpaca/go-selenium/config"
 	"github.com/theRealAlpaca/go-selenium/logger"
 )
 
@@ -21,53 +21,66 @@ type Opts struct {
 
 // Driver resembles a browser driver and parameters to connect to it.
 type Driver struct {
-	WebdriverPath string
+	WebDriverPath string
 	Port          int
 	RemoteURL     string
-	Opts          *Opts
+	Timeout       time.Duration
 	cmd           *exec.Cmd
 }
 
-func NewDriver(
-	webdriverPath string, port int, remoteURL string, opts *Opts,
+func newDriver(
+	webdriverPath string, port int, remoteURL string, timeout time.Duration,
 ) *Driver {
 	return &Driver{
-		WebdriverPath: webdriverPath,
+		WebDriverPath: webdriverPath,
 		Port:          port,
 		RemoteURL:     remoteURL,
-		Opts:          opts,
+		Timeout:       timeout,
 	}
 }
 
-func (d *Driver) Start() error {
+func Start(conf *config.WebDriverConfig) (*Driver, error) {
+	d := newDriver(conf.PathToBinary, conf.Port, conf.URL, conf.Timeout)
+
+	if d.Port == 0 {
+		d.Port = 4444
+	}
+
+	if d.RemoteURL == "" {
+		d.RemoteURL = "http://localhost"
+	}
+
+	if d.Timeout == 0 {
+		d.Timeout = time.Second * 10
+	}
+
 	//nolint:gosec
-	cmd := exec.Command(d.WebdriverPath, fmt.Sprintf("--port=%d", d.Port))
+	cmd := exec.Command(d.WebDriverPath, fmt.Sprintf("--port=%d", d.Port))
+	cmd.Stderr = cmd.Stdout
+
+	d.cmd = cmd
 
 	output, err := cmd.StdoutPipe()
 	if err != nil {
-		return errors.Wrap(err, "failed to get stdout pipe")
+		return nil, errors.Wrap(err, "failed to get stdout pipe")
 	}
-
-	cmd.Stderr = cmd.Stdout
 
 	err = cmd.Start()
 	if err != nil {
-		return errors.Wrap(err, "failed to start command")
+		return nil, errors.Wrap(err, "failed to start command")
 	}
 
 	ready := make(chan bool, 1)
 
 	go printLogs(ready, d, output)
 
-	d.cmd = cmd
-
 	select {
 	case <-ready:
-	case <-time.After(d.Opts.Timeout):
-		return errors.Errorf("failed to start driver within %s", d.Opts.Timeout)
+	case <-time.After(d.Timeout):
+		return nil, errors.Errorf("failed to start driver within %s", d.Timeout)
 	}
 
-	return nil
+	return d, nil
 }
 
 func (d *Driver) Stop() error {
@@ -80,28 +93,23 @@ func (d *Driver) Stop() error {
 }
 
 func IsReady(c api.Requester) (bool, error) {
-	res, err := api.ExecuteRequestRaw(
-		http.MethodGet, "/status", c, struct{}{},
-	)
-	if err != nil {
-		return false, errors.Wrap(err, "failed to get status")
-	}
-
-	type response struct {
+	var response struct {
 		Value struct {
 			Ready   bool   `json:"ready"`
 			Message string `json:"message"`
 		} `json:"value"`
 	}
 
-	var r response
-
-	if err := json.Unmarshal(res, &r); err != nil {
-		return false, errors.Wrap(err, "failed to unmarshal response")
+	err := api.ExecuteRequestCustom(
+		http.MethodGet, "/status", c, struct{}{}, &response,
+	)
+	if err != nil {
+		return false, errors.Wrap(err, "failed to get status")
 	}
 
-	return r.Value.Ready, nil
+	return response.Value.Ready, nil
 }
+
 func printLogs(ready chan<- bool, d *Driver, output io.ReadCloser) {
 	scanner := bufio.NewScanner(output)
 

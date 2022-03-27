@@ -7,12 +7,12 @@ import (
 	"github.com/theRealAlpaca/go-selenium/logger"
 )
 
-type Halter interface {
+type Sessioner interface {
 	AddError(err string)
-	Stop()
+	DeleteSession()
 }
 
-func HandleError(h Halter, err error) {
+func HandleError(s Sessioner, err error) {
 	if err == nil {
 		return
 	}
@@ -21,22 +21,22 @@ func HandleError(h Halter, err error) {
 		panic(err)
 	}
 
-	h.AddError(err.Error())
+	s.AddError(err.Error())
 
 	if config.Config.SoftAsserts {
 		return
 	}
 
 	logger.Error(err)
-	// TODO: Maybe Stop only the current session and not the whole client?
-	h.Stop()
+
+	s.DeleteSession()
 }
-func HandleResponseError(h Halter, res *api.ErrorResponse) {
+func HandleResponseError(s Sessioner, res *api.ErrorResponse) {
 	if res == nil {
 		return
 	}
 
-	h.AddError(res.String())
+	s.AddError(res.String())
 
 	if config.Config.SoftAsserts {
 		return
@@ -44,6 +44,5 @@ func HandleResponseError(h Halter, res *api.ErrorResponse) {
 
 	logger.Error(res.String())
 
-	// TODO: Maybe Stop only the current session and not the whole client?
-	h.Stop()
+	s.DeleteSession()
 }

@@ -19,12 +19,10 @@ type Opts struct {
 
 // Start starts browser driver server and establishes WebDriver session that
 // is returned.
-func Start(d *driver.Driver, opts *Opts) *session.Session {
+func Start(opts *Opts) *session.Session {
 	if opts == nil {
-		opts = &Opts{ConfigPath: ""}
+		opts = &Opts{}
 	}
-
-	client.SetDriver(d)
 
 	c := client.Client
 
@@ -37,10 +35,12 @@ func Start(d *driver.Driver, opts *Opts) *session.Session {
 
 	logger.SetStringLogLevel(config.Config.LogLevel)
 
-	err = c.Driver.Start()
+	d, err := driver.Start(config.Config.WebDriver)
 	if err != nil {
 		panic(errors.Wrap(err, "failed to launch driver"))
 	}
+
+	c.Driver = d
 
 	session, err := client.StartNewSession()
 	if err != nil {

@@ -29,7 +29,50 @@ type Requester interface {
 	GetPort() int
 }
 
-func ExecuteRequestRaw(
+func ExecuteRequest(
+	method, route string, r Requester, payload interface{},
+) (*Response, error) {
+	res, reqErr := executeRequestRaw(method, route, r, payload)
+	if reqErr != nil {
+		if !errors.As(reqErr, &ErrFailedRequest) {
+			return nil, errors.Wrap(reqErr, "failed to execute request")
+		}
+	}
+
+	var response Response
+
+	err := json.Unmarshal(res, &response)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to unmarshal response")
+	}
+
+	if reqErr != nil {
+		return &response, reqErr
+	}
+
+	return &response, nil
+}
+
+func ExecuteRequestVoid(method, route string, r Requester) (*Response, error) {
+	return ExecuteRequest(method, route, r, struct{}{})
+}
+
+func ExecuteRequestCustom(
+	method, route string, r Requester, payload, customResponse interface{},
+) error {
+	res, err := executeRequestRaw(method, route, r, payload)
+	if err != nil {
+		return errors.Wrap(err, "failed to execute request")
+	}
+
+	if err := json.Unmarshal(res, customResponse); err != nil {
+		return errors.Wrap(err, "failed to unmarshal response")
+	}
+
+	return nil
+}
+
+func executeRequestRaw(
 	method, route string, r Requester, payload interface{},
 ) ([]byte, error) {
 	body, err := json.Marshal(payload)
@@ -77,44 +120,6 @@ func ExecuteRequestRaw(
 	return b, nil
 }
 
-func ExecuteRequest(
-	method, route string, r Requester, payload interface{},
-) (*Response, error) {
-	res, reqErr := ExecuteRequestRaw(method, route, r, payload)
-	if reqErr != nil {
-		if !errors.As(reqErr, &ErrFailedRequest) {
-			return nil, errors.Wrap(reqErr, "failed to execute request")
-		}
-	}
-
-	var response Response
-
-	err := json.Unmarshal(res, &response)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to unmarshal response")
-	}
-
-	if reqErr != nil {
-		return &response, reqErr
-	}
-
-	return &response, nil
-}
-
-func ExecuteRequestCustom(
-	method, route string, r Requester, payload, customResponse interface{},
-) error {
-	res, err := ExecuteRequestRaw(method, route, r, payload)
-	if err != nil {
-		return errors.Wrap(err, "failed to execute request")
-	}
-
-	if err := json.Unmarshal(res, customResponse); err != nil {
-		return errors.Wrap(err, "failed to unmarshal response")
-	}
-
-	return nil
-}
 func getStatusClass(code int) int {
 	class := code / 100
 	switch class {
