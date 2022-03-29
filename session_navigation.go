@@ -1,44 +1,22 @@
-package session
+package selenium
 
 import (
 	"fmt"
 	"net/http"
 
 	"github.com/pkg/errors"
-	"github.com/theRealAlpaca/go-selenium/api"
 	"github.com/theRealAlpaca/go-selenium/util"
 )
 
-type Navigatorer interface {
-	// OpenURL opens a new window with the given URL.
-	OpenURL(url string)
-
-	// GetCurrentURL returns the current URL of the browsing context.
-	GetCurrentURL() string
-
-	// Refresh refreshes the current page.
-	Refresh()
-
-	// Back navigates back in the browser history.
-	Back()
-
-	// Forward navigates forward in the browser history.
-	Forward()
-
-	// GetTitle returns the current page title.
-	GetTitle() string
-}
-
 // OpenURL opens a new window with the given URL.
-func (s *Session) OpenURL(url string) {
+func (s *session) OpenURL(url string) {
 	requestBody := struct {
 		URL string `json:"url"`
 	}{url}
 
-	res, err := api.ExecuteRequest(
+	res, err := s.api.ExecuteRequest(
 		http.MethodPost,
-		fmt.Sprintf("/session/%s/url", s.ID),
-		s,
+		fmt.Sprintf("/session/%s/url", s.id),
 		requestBody,
 	)
 	if err != nil {
@@ -53,11 +31,10 @@ func (s *Session) OpenURL(url string) {
 }
 
 // GetCurrentURL returns the current URL of the browsing context.
-func (s *Session) GetCurrentURL() string {
-	res, err := api.ExecuteRequestVoid(
+func (s *session) GetCurrentURL() string {
+	res, err := s.api.ExecuteRequestVoid(
 		http.MethodGet,
-		fmt.Sprintf("/session/%s/url", s.ID),
-		s,
+		fmt.Sprintf("/session/%s/url", s.id),
 	)
 	if err != nil {
 		if errRes := res.GetErrorReponse(); errRes != nil {
@@ -73,11 +50,10 @@ func (s *Session) GetCurrentURL() string {
 }
 
 // Refresh refreshes the current page.
-func (s *Session) Refresh() {
-	res, err := api.ExecuteRequestVoid(
+func (s *session) Refresh() {
+	res, err := s.api.ExecuteRequestVoid(
 		http.MethodPost,
-		fmt.Sprintf("/session/%s/refresh", s.ID),
-		s,
+		fmt.Sprintf("/session/%s/refresh", s.id),
 	)
 	if err != nil {
 		if errRes := res.GetErrorReponse(); errRes != nil {
@@ -91,11 +67,10 @@ func (s *Session) Refresh() {
 }
 
 // Back navigates back in the browser history.
-func (s *Session) Back() {
-	res, err := api.ExecuteRequestVoid(
+func (s *session) Back() {
+	res, err := s.api.ExecuteRequestVoid(
 		http.MethodPost,
-		fmt.Sprintf("/session/%s/back", s.ID),
-		s,
+		fmt.Sprintf("/session/%s/back", s.id),
 	)
 	if err != nil {
 		if errRes := res.GetErrorReponse(); errRes != nil {
@@ -109,11 +84,10 @@ func (s *Session) Back() {
 }
 
 // Forward navigates forward in the browser history.
-func (s *Session) Forward() {
-	res, err := api.ExecuteRequestVoid(
+func (s *session) Forward() {
+	res, err := s.api.ExecuteRequestVoid(
 		http.MethodPost,
-		fmt.Sprintf("/session/%s/forward", s.ID),
-		s,
+		fmt.Sprintf("/session/%s/forward", s.id),
 	)
 	if err != nil {
 		if errRes := res.GetErrorReponse(); errRes != nil {
@@ -127,11 +101,10 @@ func (s *Session) Forward() {
 }
 
 // GetTitle returns the current page title.
-func (s *Session) GetTitle() string {
-	res, err := api.ExecuteRequestVoid(
+func (s *session) GetTitle() string {
+	res, err := s.api.ExecuteRequestVoid(
 		http.MethodGet,
-		fmt.Sprintf("/session/%s/title", s.ID),
-		s,
+		fmt.Sprintf("/session/%s/title", s.id),
 	)
 	if err != nil {
 		if errRes := res.GetErrorReponse(); errRes != nil {

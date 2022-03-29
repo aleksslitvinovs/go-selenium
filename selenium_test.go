@@ -1,19 +1,36 @@
-package main
+package selenium_test
 
 import (
+	"testing"
 	"time"
 
 	"github.com/theRealAlpaca/go-selenium"
 )
 
-//nolint:errcheck
-func main() {
-	c, s := selenium.Start(nil)
+func Test(t *testing.T) {
+	d, err := selenium.NewDriver(
+		"/Users/aleksslitvinovs/Downloads/chromedriver",
+		"http://localhost:4444",
+	)
+	if err != nil {
+		panic(err)
+	}
 
-	defer c.Stop()
+	c, err := selenium.NewClient(d, nil)
+	if err != nil {
+		panic(err)
+	}
+
+	defer c.MustStop()
+
+	s, err := c.CreateSession()
+	if err != nil {
+		panic(err)
+	}
 
 	// s.OpenURL("https://app.stage.loadero.com/login")
-	s.Navigation.OpenURL("https://app.stage.loadero.com/login")
+	s.OpenURL("https://app.stage.loadero.com/login")
+	s.NewElement("#email")
 	// s.NewWindow()
 
 	// fmt.Println(s.GetWindowHandle())
@@ -36,7 +53,7 @@ func main() {
 	// s.Forward()
 	// fmt.Println(s.GetTitle())
 
-	s.NewElement(".sign-in-form").WaitFor(time.Second * 5).UntilIsVisible()
+	s.NewElement(".sign-in-form")
 	s.NewElement("#username").
 		WaitFor(time.Second * 5).UntilIsVisible().
 		SendKeys("testing@loadero.abc")

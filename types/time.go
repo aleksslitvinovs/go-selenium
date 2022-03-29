@@ -1,4 +1,4 @@
-package config
+package types
 
 import (
 	"encoding/json"
@@ -16,14 +16,19 @@ func (t *Time) String() string {
 }
 
 func (t *Time) MarshalJSON() ([]byte, error) {
-	return json.Marshal(t.String())
+	data, err := json.Marshal(t.String())
+	if err != nil {
+		return []byte{}, errors.Wrap(err, "failed to marshal duration")
+	}
+
+	return data, nil
 }
 
 func (t *Time) UnmarshalJSON(data []byte) error {
 	var s string
 
 	if err := json.Unmarshal(data, &s); err != nil {
-		return err
+		return errors.Wrap(err, "failed to unmarshal duration")
 	}
 
 	d, err := time.ParseDuration(s)

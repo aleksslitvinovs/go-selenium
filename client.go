@@ -3,126 +3,137 @@ package selenium
 import (
 	"fmt"
 	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/pkg/errors"
+	"github.com/theRealAlpaca/go-selenium/api"
 	"github.com/theRealAlpaca/go-selenium/config"
-	"github.com/theRealAlpaca/go-selenium/driver"
 	"github.com/theRealAlpaca/go-selenium/logger"
-	"github.com/theRealAlpaca/go-selenium/session"
+	"github.com/theRealAlpaca/go-selenium/types"
+)
+
+var (
+	started = false
 )
 
 type client struct {
-	Driver   *driver.Driver
-	Sessions map[*session.Session]bool
+	api      *api.APIClient
+	driver   *driver
+	sessions map[*session]bool
 }
 
-var (
-	done = make(chan struct{})
-)
+type Opts struct {
+	ConfigPath string
+}
 
-func NewClient(d *driver.Driver) *client {
+// NewClient creates a new client instance with the provided driver. Based on
+// the configuration settings, a driver may be started. Optionally, Opts can be
+// provided for additional configuration.
+func NewClient(d *driver, opts *Opts) (types.Clienter, error) {
 	if d == nil {
-		panic("driver cannot be nil")
-	}
-
-	return &client{
-		Driver:   d,
-		Sessions: make(map[*session.Session]bool),
-	}
-}
-
-func (c *client) GetURL() string {
-	return c.Driver.RemoteURL
-}
-
-func (c *client) GetPort() int {
-	return c.Driver.Port
-}
-
-func (c *client) StartNewSession() (*session.Session, error) {
-	if err := c.waitUntilIsReady(10 * time.Second); err != nil {
-		return &session.Session{}, errors.Wrap(
-			err, "driver is not ready to start a new session",
+		return nil, errors.Wrap(
+			types.ErrInvalidParameters, "driver cannot be nil",
 		)
 	}
 
-	s, err := session.NewSession(c)
+	if opts == nil {
+		opts = &Opts{}
+	}
+
+	if !started {
+		go gracefulShutdown()
+
+		err := config.ReadConfig(opts.ConfigPath)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to read config")
+		}
+
+		logger.SetLogLevel(config.Config.LogLevel)
+
+		started = true
+	}
+
+	if config.Config.WebDriver.AutoStart {
+		err := d.Start(config.Config.WebDriver)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to launch driver")
+		}
+	}
+
+	c := &client{
+		api:      &api.APIClient{BaseURL: d.remoteURL},
+		driver:   d,
+		sessions: make(map[*session]bool),
+	}
+
+	return c, nil
+}
+
+func gracefulShutdown() {
+	var stop = make(chan os.Signal, 1)
+
+	signal.Notify(stop, syscall.SIGTERM, syscall.SIGINT)
+
+	<-stop
+
+	os.Exit(0)
+}
+
+func (c *client) MustStop() {
+	err := c.Stop()
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to start new session")
-	}
-
-	s.KillDriver = done
-
-	c.Sessions[s] = true
-
-	go c.sessionListener(s)
-
-	return s, nil
-}
-
-func (c *client) sessionListener(s *session.Session) {
-	if len(c.Sessions) == 0 {
-		c.Stop()
-	}
-
-	<-s.KillDriver
-
-	delete(c.Sessions, s)
-
-	if len(c.Sessions) == 0 {
-		c.Stop()
+		panic(errors.Wrap(err, "failed to stop driver"))
 	}
 }
 
-func (c *client) Stop() {
-	exitCode := 0
+func (c *client) Stop() error {
+	var tempErr error
 
 	// Driver must be stopped even if session cannot be deleted.
 	defer func() {
-		err := c.Driver.Stop()
-		if err != nil {
-			panic(errors.Wrap(err, "failed to stop driver"))
+		if c.driver == nil {
+			return
 		}
 
-		os.Exit(exitCode)
+		err := c.driver.Stop()
+		if err != nil {
+			tempErr = errors.Wrap(err, "failed to stop driver process")
+		}
 	}()
 
-	for s, v := range c.Sessions {
+	for s, v := range c.sessions {
 		if !v {
 			continue
 		}
 
 		s.DeleteSession()
 
-		if len(s.GetErrors()) != 0 {
-			exitCode = 1
-		}
-
 		if config.Config.RaiseErrorsAutomatically {
 			e := s.RaiseErrors()
 
 			if e != "" {
 				logger.Errorf("There were issues during execution:\n%s", e)
-
-				exitCode = 1
 			}
 		}
 
-		delete(c.Sessions, s)
+		delete(c.sessions, s)
 	}
+
+	return tempErr
 }
 
 func (c *client) RaiseErrors() {
-	for s := range c.Sessions {
+	for s := range c.sessions {
 		errors := s.RaiseErrors()
 
 		if len(errors) == 0 {
 			continue
 		}
 
-		fmt.Printf(
-			"Errors occurred in %s session:\n%s\n", s.ID, errors,
+		logger.Errorf(
+			"Errors occurred in %s session:\n%s\n", s.id, errors,
 		)
 	}
 }
@@ -130,14 +141,8 @@ func (c *client) RaiseErrors() {
 func (c *client) waitUntilIsReady(timeout time.Duration) error {
 	endTime := time.Now().Add(timeout)
 
-	for {
-		if endTime.Before(time.Now()) {
-			return errors.New(
-				"timeout exceeded while waiting for driver to be ready",
-			)
-		}
-
-		ok, err := driver.IsReady(c)
+	for endTime.After(time.Now()) {
+		ok, err := c.driver.IsReady(c)
 		if err != nil {
 			fmt.Println(err.Error())
 
@@ -155,4 +160,9 @@ func (c *client) waitUntilIsReady(timeout time.Duration) error {
 
 		time.Sleep(500 * time.Millisecond)
 	}
+
+	return errors.Errorf(
+		"%s timeout exceeded while waiting for driver to be ready",
+		timeout.String(),
+	)
 }

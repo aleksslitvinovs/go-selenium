@@ -12,11 +12,12 @@ import (
 type LevelName string
 
 const (
-	DebugLvl LevelName = "debug"
-	InfoLvl  LevelName = "info"
-	WarnLvl  LevelName = "warn"
-	ErrorLvl LevelName = "error"
-	FatalLvl LevelName = "fatal"
+	DebugLvl  LevelName = "debug"
+	InfoLvl   LevelName = "info"
+	WarnLvl   LevelName = "warn"
+	ErrorLvl  LevelName = "error"
+	FatalLvl  LevelName = "fatal"
+	CustomLvl LevelName = "custom"
 )
 
 type level struct {
@@ -26,11 +27,12 @@ type level struct {
 }
 
 var (
-	debug = level{DebugLvl, 0, color.CyanString}
-	info  = level{InfoLvl, 1, color.WhiteString}
-	warn  = level{WarnLvl, 2, color.YellowString}
-	err   = level{ErrorLvl, 3, color.HiRedString}
-	fatal = level{FatalLvl, 4, color.HiRedString}
+	debug  = level{DebugLvl, 0, color.CyanString}
+	info   = level{InfoLvl, 1, color.WhiteString}
+	warn   = level{WarnLvl, 2, color.YellowString}
+	err    = level{ErrorLvl, 3, color.HiRedString}
+	fatal  = level{FatalLvl, 4, color.HiRedString}
+	custom = level{CustomLvl, 5, color.WhiteString}
 
 	l = &logger{
 		Level:  info,
@@ -71,9 +73,29 @@ func write(lvl level, msg string) {
 		return
 	}
 
+	if lvl.name == ErrorLvl || lvl.name == FatalLvl {
+		//nolint: errcheck
+		l.Logger.Output(
+			1, lvl.format("[%s]%s", strings.ToUpper(string(lvl.name)), msg),
+		)
+
+		return
+	}
+
+	if lvl.name == CustomLvl {
+		l.Logger.SetFlags(0)
+		defer l.Logger.SetFlags(log.LstdFlags)
+
+		//nolint: errcheck
+		l.Logger.Output(1, msg)
+
+		return
+	}
+
 	//nolint: errcheck
 	l.Logger.Output(
-		1, lvl.format("[%s]%s", strings.ToUpper(string(lvl.name)), msg),
+		1,
+		fmt.Sprint(lvl.format("[%s]", strings.ToUpper(string(lvl.name))), msg),
 	)
 }
 
@@ -119,4 +141,12 @@ func Fatalf(msg string, v ...interface{}) {
 	write(fatal, fmt.Sprintf(msg, v...))
 
 	os.Exit(1)
+}
+
+func Custom(msg ...interface{}) {
+	write(custom, fmt.Sprint(msg...))
+}
+
+func CustomF(msg string, v ...interface{}) {
+	write(custom, fmt.Sprintf(msg, v...))
 }

@@ -1,46 +1,13 @@
-package session
+package selenium
 
 import (
 	"fmt"
 	"net/http"
 
 	"github.com/pkg/errors"
-	"github.com/theRealAlpaca/go-selenium/api"
+	"github.com/theRealAlpaca/go-selenium/types"
 	"github.com/theRealAlpaca/go-selenium/util"
 )
-
-type Contexter interface {
-	// GetWindowHandle returns the current browsing context window handle.
-	GetWindowHandle() string
-
-	// GetWindowHandles returns an array of window handles for each browsing
-	// context. The order of the handles is arbitrary.
-	GetWindowHandles() []string
-
-	// CloseWindow closes the current browsing context.
-	CloseWindow()
-
-	// SwitchHandle switches to the given browsing context.
-	SwitchHandle(handle string)
-
-	// NewTab opens a new tab in the current window.
-	NewTab() *Handle
-
-	// NewWindow opens a window.
-	NewWindow() *Handle
-
-	// TODO: Not working yet.
-	// SwitchToFrame switches to the given iframe element.
-	SwitchToFrame(id int)
-
-	// SwitchToParentFrame switches to the parent frame of the current frame.
-	SwitchToParentFrame()
-}
-
-type Handle struct {
-	ID   string `json:"handle"`
-	Type string `json:"type"`
-}
 
 type handleType string
 
@@ -49,11 +16,10 @@ var (
 	window handleType = "window"
 )
 
-func (s *Session) GetWindowHandle() string {
-	res, err := api.ExecuteRequestVoid(
+func (s *session) GetWindowHandle() string {
+	res, err := s.api.ExecuteRequestVoid(
 		http.MethodGet,
-		fmt.Sprintf("/session/%s/window", s.ID),
-		s,
+		fmt.Sprintf("/session/%s/window", s.id),
 	)
 	if err != nil {
 		if errRes := res.GetErrorReponse(); errRes != nil {
@@ -68,11 +34,10 @@ func (s *Session) GetWindowHandle() string {
 	return res.Value.(string)
 }
 
-func (s *Session) GetWindowHandles() []string {
-	res, err := api.ExecuteRequestVoid(
+func (s *session) GetWindowHandles() []string {
+	res, err := s.api.ExecuteRequestVoid(
 		http.MethodGet,
-		fmt.Sprintf("/session/%s/window/handles", s.ID),
-		s,
+		fmt.Sprintf("/session/%s/window/handles", s.id),
 	)
 	if err != nil {
 		if errRes := res.GetErrorReponse(); errRes != nil {
@@ -94,11 +59,10 @@ func (s *Session) GetWindowHandles() []string {
 	return handles
 }
 
-func (s *Session) CloseWindow() {
-	res, err := api.ExecuteRequestVoid(
+func (s *session) CloseWindow() {
+	res, err := s.api.ExecuteRequestVoid(
 		http.MethodDelete,
-		fmt.Sprintf("/session/%s/window", s.ID),
-		s,
+		fmt.Sprintf("/session/%s/window", s.id),
 	)
 	if err != nil {
 		if errRes := res.GetErrorReponse(); errRes != nil {
@@ -110,18 +74,22 @@ func (s *Session) CloseWindow() {
 		util.HandleError(s, errors.Wrap(err, "failed to close window"))
 	}
 
-	s.KillDriver <- struct{}{}
+	handles := s.GetWindowHandles()
+
+	// If there are no open browsing contexts left, the session is closed.
+	if len(handles) == 0 {
+		s.killDriver <- struct{}{}
+	}
 }
 
-func (s *Session) SwitchHandle(handle string) {
+func (s *session) SwitchHandle(handle string) {
 	payload := struct {
 		Handle string `json:"handle"`
 	}{handle}
 
-	res, err := api.ExecuteRequest(
+	res, err := s.api.ExecuteRequest(
 		http.MethodPost,
-		fmt.Sprintf("/session/%s/window", s.ID),
-		s,
+		fmt.Sprintf("/session/%s/window", s.id),
 		payload,
 	)
 	if err != nil {
@@ -135,27 +103,26 @@ func (s *Session) SwitchHandle(handle string) {
 	}
 }
 
-func (s *Session) NewTab() *Handle {
+func (s *session) NewTab() *types.Handle {
 	return s.newWindowWithType(tab)
 }
 
-func (s *Session) NewWindow() *Handle {
+func (s *session) NewWindow() *types.Handle {
 	return s.newWindowWithType(window)
 }
 
-func (s *Session) newWindowWithType(ht handleType) *Handle {
+func (s *session) newWindowWithType(ht handleType) *types.Handle {
 	payload := struct {
 		HandleType string `json:"type"`
 	}{string(ht)}
 
 	var response struct {
-		Value Handle `json:"value"`
+		Value types.Handle `json:"value"`
 	}
 
-	err := api.ExecuteRequestCustom(
+	err := s.api.ExecuteRequestCustom(
 		http.MethodPost,
-		fmt.Sprintf("/session/%s/window/new", s.ID),
-		s,
+		fmt.Sprintf("/session/%s/window/new", s.id),
 		payload,
 		&response,
 	)
@@ -170,15 +137,14 @@ func (s *Session) newWindowWithType(ht handleType) *Handle {
 
 // FIXME: Allow passing handle ID instead of int
 // https://www.w3.org/TR/webdriver/#switch-to-frame
-func (s *Session) SwitchToFrame(id int) {
+func (s *session) SwitchToFrame(id int) {
 	payload := struct {
 		ID int `json:"id"`
 	}{id}
 
-	res, err := api.ExecuteRequest(
+	res, err := s.api.ExecuteRequest(
 		http.MethodPost,
-		fmt.Sprintf("/session/%s/frame", s.ID),
-		s,
+		fmt.Sprintf("/session/%s/frame", s.id),
 		payload,
 	)
 	if err != nil {
@@ -192,11 +158,10 @@ func (s *Session) SwitchToFrame(id int) {
 	}
 }
 
-func (s *Session) SwitchToParentFrame() {
-	res, err := api.ExecuteRequestVoid(
+func (s *session) SwitchToParentFrame() {
+	res, err := s.api.ExecuteRequestVoid(
 		http.MethodPost,
-		fmt.Sprintf("/session/%s/frame/parent", s.ID),
-		s,
+		fmt.Sprintf("/session/%s/frame/parent", s.id),
 	)
 	if err != nil {
 		if errRes := res.GetErrorReponse(); errRes != nil {

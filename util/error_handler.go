@@ -5,19 +5,15 @@ import (
 	"github.com/theRealAlpaca/go-selenium/api"
 	"github.com/theRealAlpaca/go-selenium/config"
 	"github.com/theRealAlpaca/go-selenium/logger"
+	"github.com/theRealAlpaca/go-selenium/types"
 )
 
-type Sessioner interface {
-	AddError(err string)
-	DeleteSession()
-}
-
-func HandleError(s Sessioner, err error) {
+func HandleError(s types.Sessioner, err error) {
 	if err == nil {
 		return
 	}
 
-	if !errors.As(err, &api.ErrFailedRequest) {
+	if !errors.As(err, &types.ErrFailedRequest) {
 		panic(err)
 	}
 
@@ -31,7 +27,8 @@ func HandleError(s Sessioner, err error) {
 
 	s.DeleteSession()
 }
-func HandleResponseError(s Sessioner, res *api.ErrorResponse) {
+
+func HandleResponseError(s types.Sessioner, res *api.ErrorResponse) {
 	if res == nil {
 		return
 	}

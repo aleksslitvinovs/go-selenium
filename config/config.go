@@ -2,28 +2,35 @@ package config
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"time"
 
 	"github.com/pkg/errors"
 	"github.com/theRealAlpaca/go-selenium/logger"
 	"github.com/theRealAlpaca/go-selenium/selector"
+	"github.com/theRealAlpaca/go-selenium/types"
 )
 
 //nolint:tagliatelle
 type ElementSettings struct {
-	IgnoreNotFound bool   `json:"ignore_not_found"`
-	RetryTimeout   Time   `json:"retry_timeout"`
-	PollInterval   Time   `json:"poll_interval"`
-	SelectorType   string `json:"selector_type"`
+	IgnoreNotFound bool       `json:"ignore_not_found"`
+	RetryTimeout   types.Time `json:"retry_timeout"`
+	PollInterval   types.Time `json:"poll_interval"`
+	SelectorType   string     `json:"selector_type"`
 }
 
+//nolint:tagliatelle
 type WebDriverConfig struct {
-	PathToBinary string `json:"path"`
-	URL          string `json:"url"`
-	// TODO: Put port in URL. No need to define it separately.
-	Port    int  `json:"port"`
-	Timeout Time `json:"timeout"`
+	AutoStart    bool       `json:"auto_start"`
+	PathToBinary string     `json:"path"`
+	URL          string     `json:"url"`
+	Timeout      types.Time `json:"timeout"`
+}
+
+//nolint:tagliatelle
+type SessionSettings struct {
+	AutoStart bool `json:"auto_start"`
 }
 
 //nolint:tagliatelle
@@ -32,7 +39,7 @@ type config struct {
 	SoftAsserts              bool             `json:"soft_asserts"`
 	RaiseErrorsAutomatically bool             `json:"raise_errors_automatically"` //nolint:lll
 	ElementSettings          *ElementSettings `json:"element_settings,omitempty"` //nolint:lll
-
+	Session                  *SessionSettings `json:"session,omitempty"`
 	// TODO: Allow running multiple drivers.
 	WebDriver *WebDriverConfig `json:"webdriver,omitempty"`
 }
@@ -72,6 +79,7 @@ func ReadConfig(configPath string) error {
 		panic(err)
 	}
 
+	fmt.Println("config", c.WebDriver.Timeout.Duration)
 	c.validateConfig()
 
 	if err := c.writeToConfig(configPath); err != nil {
@@ -120,32 +128,34 @@ func createDefaultConfig() (*config, error) {
 func (c *config) validateConfig() {
 	if c.ElementSettings.SelectorType == "" {
 		logger.Warn(`"selector_type" is not set. Defaulting to "css".`)
+
 		c.ElementSettings.SelectorType = selector.CSS
 	}
 
 	if c.ElementSettings.RetryTimeout.Duration == 0 {
 		logger.Warn(`"retry_timeout" is not set. Defaulting to "10s".`)
-		c.ElementSettings.RetryTimeout = Time{Duration: 10 * time.Second}
+
+		c.ElementSettings.RetryTimeout = types.Time{Duration: 10 * time.Second}
 	}
 
 	if c.ElementSettings.PollInterval.Duration == 0 {
 		logger.Warn(`"poll_interval" is not set. Defaulting to "500ms".`)
-		c.ElementSettings.PollInterval = Time{Duration: 500 * time.Millisecond}
+
+		c.ElementSettings.PollInterval = types.Time{
+			Duration: 500 * time.Millisecond,
+		}
 	}
 
 	if c.WebDriver.Timeout.Duration == 0 {
 		logger.Warn(`"timeout" is not set. Defaulting to "10s".`)
-		c.WebDriver.Timeout = Time{Duration: 10 * time.Second}
-	}
 
-	if c.WebDriver.Port == 0 {
-		logger.Warn(`"port" is not set. Defaulting to "4444".`)
-		c.WebDriver.Port = 4444
+		c.WebDriver.Timeout = types.Time{Duration: 10 * time.Second}
 	}
 
 	if c.WebDriver.URL == "" {
 		logger.Warn(`"url" is not set. Defaulting to "http://localhost:4444".`)
-		c.WebDriver.URL = "http://localhost"
+
+		c.WebDriver.URL = "http://localhost:4444"
 	}
 }
 

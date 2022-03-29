@@ -1,33 +1,31 @@
-package session
+package selenium
 
 import (
 	"time"
 
-	"github.com/pkg/errors"
 	"github.com/theRealAlpaca/go-selenium/config"
 	"github.com/theRealAlpaca/go-selenium/logger"
 	"github.com/theRealAlpaca/go-selenium/selector"
+	"github.com/theRealAlpaca/go-selenium/types"
+	"github.com/theRealAlpaca/go-selenium/webelement"
 )
 
 type Element struct {
 	SelectorType string                  `json:"using"`
 	Selector     string                  `json:"value"`
 	Settings     *config.ElementSettings `json:"-"`
-	Session      *Session                `json:"-"`
-	webID        string                  `json:"-"`
+	Session      *session                `json:"-"`
 }
 
 var (
-	ErrWebIDNotSet = errors.New("WebID not set")
-
 	defaultElementSettings = &config.ElementSettings{
-		PollInterval: config.Time{Duration: 500 * time.Millisecond},
-		RetryTimeout: config.Time{Duration: 5 * time.Second},
+		PollInterval: types.Time{Duration: 500 * time.Millisecond},
+		RetryTimeout: types.Time{Duration: 5 * time.Second},
 		SelectorType: selector.CSS,
 	}
 )
 
-func (s *Session) NewElement(selector string) *Element {
+func (s *session) NewElement(selector string) types.WebElementer {
 	if config.Config.ElementSettings.RetryTimeout.Milliseconds() == 0 {
 		logger.Error(`"retry_timeout" must not be 0`)
 
@@ -39,12 +37,7 @@ func (s *Session) NewElement(selector string) *Element {
 		settings = defaultElementSettings
 	}
 
-	return &Element{
-		SelectorType: settings.SelectorType,
-		Selector:     selector,
-		Settings:     settings,
-		Session:      s,
-	}
+	return webelement.NewElement("", s, selector, settings, s.api)
 }
 
 func SetSettings(settings *config.ElementSettings) {

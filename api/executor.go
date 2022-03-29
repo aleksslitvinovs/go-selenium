@@ -8,8 +8,11 @@ import (
 	"io"
 	"net/http"
 
+	"github.com/TylerBrock/colorjson"
+	"github.com/fatih/color"
 	"github.com/pkg/errors"
 	"github.com/theRealAlpaca/go-selenium/logger"
+	"github.com/theRealAlpaca/go-selenium/types"
 )
 
 // Describes possible response status code classes.
@@ -22,19 +25,30 @@ const (
 	classServerError
 )
 
-var ErrFailedRequest = errors.New("failed to execute request")
+var (
+	f = &colorjson.Formatter{
+		KeyColor:        color.New(color.FgWhite),
+		StringColor:     color.New(color.FgGreen),
+		BoolColor:       color.New(color.FgYellow),
+		NumberColor:     color.New(color.FgCyan),
+		NullColor:       color.New(color.FgMagenta),
+		StringMaxLength: 50,
+		DisabledColor:   false,
+		Indent:          0,
+		RawStrings:      true,
+	}
+)
 
-type Requester interface {
-	GetURL() string
-	GetPort() int
+type APIClient struct {
+	BaseURL string
 }
 
-func ExecuteRequest(
-	method, route string, r Requester, payload interface{},
+func (a *APIClient) ExecuteRequest(
+	method, route string, payload interface{},
 ) (*Response, error) {
-	res, reqErr := executeRequestRaw(method, route, r, payload)
+	res, reqErr := a.executeRequestRaw(method, route, payload)
 	if reqErr != nil {
-		if !errors.As(reqErr, &ErrFailedRequest) {
+		if !errors.As(reqErr, &types.ErrFailedRequest) {
 			return nil, errors.Wrap(reqErr, "failed to execute request")
 		}
 	}
@@ -53,14 +67,16 @@ func ExecuteRequest(
 	return &response, nil
 }
 
-func ExecuteRequestVoid(method, route string, r Requester) (*Response, error) {
-	return ExecuteRequest(method, route, r, struct{}{})
+func (a *APIClient) ExecuteRequestVoid(
+	method, route string,
+) (*Response, error) {
+	return a.ExecuteRequest(method, route, struct{}{})
 }
 
-func ExecuteRequestCustom(
-	method, route string, r Requester, payload, customResponse interface{},
+func (a *APIClient) ExecuteRequestCustom(
+	method, route string, payload, customResponse interface{},
 ) error {
-	res, err := executeRequestRaw(method, route, r, payload)
+	res, err := a.executeRequestRaw(method, route, payload)
 	if err != nil {
 		return errors.Wrap(err, "failed to execute request")
 	}
@@ -72,15 +88,15 @@ func ExecuteRequestCustom(
 	return nil
 }
 
-func executeRequestRaw(
-	method, route string, r Requester, payload interface{},
+func (a *APIClient) executeRequestRaw(
+	method, route string, payload interface{},
 ) ([]byte, error) {
 	body, err := json.Marshal(payload)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to marshal payload")
 	}
 
-	url := fmt.Sprintf("%s:%d%s", r.GetURL(), r.GetPort(), route)
+	url := a.BaseURL + route
 
 	req, err := http.NewRequestWithContext(
 		context.Background(), method, url, bytes.NewBuffer(body),
@@ -89,7 +105,10 @@ func executeRequestRaw(
 		return nil, errors.Wrap(err, "failed to create request")
 	}
 
-	logger.Debugf("Request: %q '%q'\n\t%s", method, url, body)
+	logger.Custom(
+		color.HiCyanString("-> Request "),
+		fmt.Sprintf("%s %s\n\t%s", method, url, formatJSON(body)),
+	)
 
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
@@ -112,12 +131,23 @@ func executeRequestRaw(
 	}
 
 	if getStatusClass(res.StatusCode) != classSuccessful {
-		return b, errors.Wrap(ErrFailedRequest, response.String())
+		return b, errors.Wrap(types.ErrFailedRequest, response.String())
 	}
 
-	logger.Debugf("Response: %s", string(b))
+	logger.Custom(color.HiGreenString("<- Response "), formatJSON(b), "\n\n")
 
 	return b, nil
+}
+
+func formatJSON(body []byte) string {
+	var data map[string]interface{}
+
+	//nolint: errcheck
+	json.Unmarshal(body, &data)
+
+	b, _ := f.Marshal(data)
+
+	return string(b)
 }
 
 func getStatusClass(code int) int {

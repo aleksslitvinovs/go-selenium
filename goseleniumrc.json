@@ -9,9 +9,9 @@
     "selector_type": "css selector"
   },
   "webdriver": {
+    "auto_start": true,
     "path": "/Users/aleksslitvinovs/Downloads/chromedriver",
     "url": "http://localhost",
-    "port": 4444,
     "timeout": "10s"
   }
 }
