@@ -79,7 +79,7 @@ func waitCondition(
 		res, err := condition()
 		if err != nil {
 			if errors.As(err, &ErrWebIDNotSet) {
-				time.Sleep(w.e.Settings.PollInterval)
+				time.Sleep(w.e.Settings.PollInterval.Duration)
 
 				continue
 			}
@@ -95,6 +95,6 @@ func waitCondition(
 			return w.e
 		}
 
-		time.Sleep(w.e.Settings.PollInterval)
+		time.Sleep(w.e.Settings.PollInterval.Duration)
 	}
 }

@@ -8,8 +8,10 @@ import (
 )
 
 type Session struct {
+	ID string
+
 	// Navigation is a helper field to access navigation methods.
-	Navigation Navigator
+	Navigation Navigatorer
 
 	// Context is a helper field to access browsering context related methods.
 	Context Contexter
@@ -20,12 +22,12 @@ type Session struct {
 
 	url    string
 	port   int
-	ID     string
 	errors []string
 }
 
+
 var (
-	_ Navigator      = (*Session)(nil)
+	_ Navigatorer    = (*Session)(nil)
 	_ Contexter      = (*Session)(nil)
 	_ util.Sessioner = (*Session)(nil)
 	_ api.Requester  = (*Session)(nil)

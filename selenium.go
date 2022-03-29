@@ -6,11 +6,10 @@ import (
 	"syscall"
 
 	"github.com/pkg/errors"
-	"github.com/theRealAlpaca/go-selenium/client"
-	"github.com/theRealAlpaca/go-selenium/client/session"
 	"github.com/theRealAlpaca/go-selenium/config"
 	"github.com/theRealAlpaca/go-selenium/driver"
 	"github.com/theRealAlpaca/go-selenium/logger"
+	"github.com/theRealAlpaca/go-selenium/session"
 )
 
 type Opts struct {
@@ -22,7 +21,7 @@ var started = false
 // Start creates a new client instances, starts browser driver server and
 // establishes new WebDriver session. Returns a new client instance and the
 // established connection.
-func Start(opts *Opts) (*client.Client, *session.Session) {
+func Start(opts *Opts) (*client, *session.Session) {
 	if opts == nil {
 		opts = &Opts{}
 	}
@@ -45,7 +44,7 @@ func Start(opts *Opts) (*client.Client, *session.Session) {
 		panic(errors.Wrap(err, "failed to launch driver"))
 	}
 
-	c := client.NewClient(d)
+	c := NewClient(d)
 
 	session, err := c.StartNewSession()
 	if err != nil {

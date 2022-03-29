@@ -9,7 +9,7 @@ import (
 	"github.com/theRealAlpaca/go-selenium/util"
 )
 
-type Navigator interface {
+type Navigatorer interface {
 	// OpenURL opens a new window with the given URL.
 	OpenURL(url string)
 

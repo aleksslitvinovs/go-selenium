@@ -113,7 +113,7 @@ func (e *Element) setElementID() {
 		e.Settings = &intialSettings
 	}()
 
-	timeout := time.Now().Add(e.Settings.RetryTimeout)
+	timeout := time.Now().Add(e.Settings.RetryTimeout.Duration)
 
 	for {
 		if time.Now().After(timeout) {
@@ -129,6 +129,6 @@ func (e *Element) setElementID() {
 			return
 		}
 
-		time.Sleep(e.Settings.PollInterval)
+		time.Sleep(e.Settings.PollInterval.Duration)
 	}
 }

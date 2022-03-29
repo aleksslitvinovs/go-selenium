@@ -20,12 +20,12 @@ type Driver struct {
 	WebDriverPath string
 	Port          int
 	RemoteURL     string
-	Timeout       time.Duration
+	Timeout       config.Time
 	cmd           *exec.Cmd
 }
 
-func newDriver(
-	webdriverPath string, port int, remoteURL string, timeout time.Duration,
+func NewDriver(
+	webdriverPath string, port int, remoteURL string, timeout config.Time,
 ) *Driver {
 	return &Driver{
 		WebDriverPath: webdriverPath,
@@ -36,7 +36,7 @@ func newDriver(
 }
 
 func Start(conf *config.WebDriverConfig) (*Driver, error) {
-	d := newDriver(conf.PathToBinary, conf.Port, conf.URL, conf.Timeout)
+	d := NewDriver(conf.PathToBinary, conf.Port, conf.URL, conf.Timeout)
 
 	if d.Port == 0 {
 		d.Port = 4444
@@ -46,8 +46,8 @@ func Start(conf *config.WebDriverConfig) (*Driver, error) {
 		d.RemoteURL = "http://localhost"
 	}
 
-	if d.Timeout == 0 {
-		d.Timeout = time.Second * 10
+	if d.Timeout.Duration == 0 {
+		d.Timeout = config.Time{Duration: time.Second * 10}
 	}
 
 	//nolint:gosec
@@ -72,8 +72,10 @@ func Start(conf *config.WebDriverConfig) (*Driver, error) {
 
 	select {
 	case <-ready:
-	case <-time.After(d.Timeout):
-		return nil, errors.Errorf("failed to start driver within %s", d.Timeout)
+	case <-time.After(d.Timeout.Duration):
+		return nil, errors.Errorf(
+			"failed to start driver within %s", d.Timeout.String(),
+		)
 	}
 
 	return d, nil

@@ -21,8 +21,8 @@ var (
 	ErrWebIDNotSet = errors.New("WebID not set")
 
 	defaultElementSettings = &config.ElementSettings{
-		PollInterval: 500 * time.Millisecond,
-		RetryTimeout: 5 * time.Second,
+		PollInterval: config.Time{Duration: 500 * time.Millisecond},
+		RetryTimeout: config.Time{Duration: 5 * time.Second},
 		SelectorType: selector.CSS,
 	}
 )

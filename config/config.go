@@ -7,21 +7,23 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/theRealAlpaca/go-selenium/logger"
+	"github.com/theRealAlpaca/go-selenium/selector"
 )
 
 //nolint:tagliatelle
 type ElementSettings struct {
-	IgnoreNotFound bool          `json:"ignore_not_found"`
-	RetryTimeout   time.Duration `json:"retry_timeout"`
-	PollInterval   time.Duration `json:"poll_interval"`
-	SelectorType   string        `json:"selector_type"`
+	IgnoreNotFound bool   `json:"ignore_not_found"`
+	RetryTimeout   Time   `json:"retry_timeout"`
+	PollInterval   Time   `json:"poll_interval"`
+	SelectorType   string `json:"selector_type"`
 }
 
 type WebDriverConfig struct {
-	PathToBinary string        `json:"path"`
-	URL          string        `json:"url"`
-	Port         int           `json:"port"`
-	Timeout      time.Duration `json:"timeout"`
+	PathToBinary string `json:"path"`
+	URL          string `json:"url"`
+	// TODO: Put port in URL. No need to define it separately.
+	Port    int  `json:"port"`
+	Timeout Time `json:"timeout"`
 }
 
 //nolint:tagliatelle
@@ -70,6 +72,12 @@ func ReadConfig(configPath string) error {
 		panic(err)
 	}
 
+	c.validateConfig()
+
+	if err := c.writeToConfig(configPath); err != nil {
+		panic(err)
+	}
+
 	Config = c
 
 	return nil
@@ -91,13 +99,6 @@ func readConfigFromFile(configPath string) (*config, error) {
 }
 
 func createDefaultConfig() (*config, error) {
-	f, err := os.Create(defaultConfigPath)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to create config file")
-	}
-
-	defer f.Close()
-
 	// TODO: implement automatic driver download.
 
 	c := &config{
@@ -108,15 +109,63 @@ func createDefaultConfig() (*config, error) {
 		// WebDriver:                &WebDriverConfig{},
 	}
 
-	data, err := json.MarshalIndent(c, "", "  ")
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to marshal config")
-	}
-
-	_, err = f.WriteString(string(data))
+	err := c.writeToConfig(defaultConfigPath)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to write config")
 	}
 
 	return c, nil
+}
+
+func (c *config) validateConfig() {
+	if c.ElementSettings.SelectorType == "" {
+		logger.Warn(`"selector_type" is not set. Defaulting to "css".`)
+		c.ElementSettings.SelectorType = selector.CSS
+	}
+
+	if c.ElementSettings.RetryTimeout.Duration == 0 {
+		logger.Warn(`"retry_timeout" is not set. Defaulting to "10s".`)
+		c.ElementSettings.RetryTimeout = Time{Duration: 10 * time.Second}
+	}
+
+	if c.ElementSettings.PollInterval.Duration == 0 {
+		logger.Warn(`"poll_interval" is not set. Defaulting to "500ms".`)
+		c.ElementSettings.PollInterval = Time{Duration: 500 * time.Millisecond}
+	}
+
+	if c.WebDriver.Timeout.Duration == 0 {
+		logger.Warn(`"timeout" is not set. Defaulting to "10s".`)
+		c.WebDriver.Timeout = Time{Duration: 10 * time.Second}
+	}
+
+	if c.WebDriver.Port == 0 {
+		logger.Warn(`"port" is not set. Defaulting to "4444".`)
+		c.WebDriver.Port = 4444
+	}
+
+	if c.WebDriver.URL == "" {
+		logger.Warn(`"url" is not set. Defaulting to "http://localhost:4444".`)
+		c.WebDriver.URL = "http://localhost"
+	}
+}
+
+func (c *config) writeToConfig(configPath string) error {
+	data, err := json.MarshalIndent(c, "", "  ")
+	if err != nil {
+		return errors.Wrap(err, "failed to marshal config")
+	}
+
+	f, err := os.Create(configPath)
+	if err != nil {
+		return errors.Wrap(err, "failed to create config file")
+	}
+
+	defer f.Close()
+
+	_, err = f.WriteString(string(data))
+	if err != nil {
+		return errors.Wrap(err, "failed to write config")
+	}
+
+	return nil
 }

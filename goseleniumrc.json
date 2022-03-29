@@ -4,14 +4,14 @@
   "raise_errors_automatically": true,
   "element_settings": {
     "ignore_not_found": false,
-    "retry_timeout": 0,
-    "poll_interval": 0,
-    "selector_type": ""
+    "retry_timeout": "10s",
+    "poll_interval": "500ms",
+    "selector_type": "css selector"
   },
   "webdriver": {
     "path": "/Users/aleksslitvinovs/Downloads/chromedriver",
-    "url": "",
-    "port": 0,
-    "timeout": 0
+    "url": "http://localhost",
+    "port": 4444,
+    "timeout": "10s"
   }
 }

@@ -1,4 +1,4 @@
-package client
+package selenium
 
 import (
 	"fmt"
@@ -6,13 +6,13 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"github.com/theRealAlpaca/go-selenium/client/session"
 	"github.com/theRealAlpaca/go-selenium/config"
 	"github.com/theRealAlpaca/go-selenium/driver"
 	"github.com/theRealAlpaca/go-selenium/logger"
+	"github.com/theRealAlpaca/go-selenium/session"
 )
 
-type Client struct {
+type client struct {
 	Driver   *driver.Driver
 	Sessions map[*session.Session]bool
 }
@@ -21,26 +21,26 @@ var (
 	done = make(chan struct{})
 )
 
-func NewClient(d *driver.Driver) *Client {
+func NewClient(d *driver.Driver) *client {
 	if d == nil {
 		panic("driver cannot be nil")
 	}
 
-	return &Client{
+	return &client{
 		Driver:   d,
 		Sessions: make(map[*session.Session]bool),
 	}
 }
 
-func (c *Client) GetURL() string {
+func (c *client) GetURL() string {
 	return c.Driver.RemoteURL
 }
 
-func (c *Client) GetPort() int {
+func (c *client) GetPort() int {
 	return c.Driver.Port
 }
 
-func (c *Client) StartNewSession() (*session.Session, error) {
+func (c *client) StartNewSession() (*session.Session, error) {
 	if err := c.waitUntilIsReady(10 * time.Second); err != nil {
 		return &session.Session{}, errors.Wrap(
 			err, "driver is not ready to start a new session",
@@ -61,7 +61,7 @@ func (c *Client) StartNewSession() (*session.Session, error) {
 	return s, nil
 }
 
-func (c *Client) sessionListener(s *session.Session) {
+func (c *client) sessionListener(s *session.Session) {
 	if len(c.Sessions) == 0 {
 		c.Stop()
 	}
@@ -75,7 +75,7 @@ func (c *Client) sessionListener(s *session.Session) {
 	}
 }
 
-func (c *Client) Stop() {
+func (c *client) Stop() {
 	exitCode := 0
 
 	// Driver must be stopped even if session cannot be deleted.
@@ -113,7 +113,7 @@ func (c *Client) Stop() {
 	}
 }
 
-func (c *Client) RaiseErrors() {
+func (c *client) RaiseErrors() {
 	for s := range c.Sessions {
 		errors := s.RaiseErrors()
 
@@ -127,7 +127,7 @@ func (c *Client) RaiseErrors() {
 	}
 }
 
-func (c *Client) waitUntilIsReady(timeout time.Duration) error {
+func (c *client) waitUntilIsReady(timeout time.Duration) error {
 	endTime := time.Now().Add(timeout)
 
 	for {
