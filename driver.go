@@ -17,8 +17,9 @@ import (
 	"github.com/theRealAlpaca/go-selenium/types"
 )
 
-// driver resembles a browser driver and parameters to connect to it.
-type driver struct {
+// TODO: Create interface for Driver
+// Driver resembles a browser Driver and parameters to connect to it.
+type Driver struct {
 	webDriverPath string
 	port          int
 	remoteURL     string
@@ -28,7 +29,7 @@ type driver struct {
 
 func NewDriver(
 	webdriverPath string, remoteURL string,
-) (*driver, error) {
+) (*Driver, error) {
 	if remoteURL == "" {
 		return nil, errors.Wrap(
 			types.ErrInvalidParameters,
@@ -46,14 +47,14 @@ func NewDriver(
 		return nil, errors.Wrap(err, "failed to parse port")
 	}
 
-	return &driver{
+	return &Driver{
 		webDriverPath: webdriverPath,
 		port:          port,
 		remoteURL:     remoteURL,
 	}, nil
 }
 
-func (d *driver) Start(conf *config.WebDriverConfig) error {
+func (d *Driver) Start(conf *config.WebDriverConfig) error {
 	d.timeout = conf.Timeout
 
 	//nolint:gosec
@@ -74,8 +75,6 @@ func (d *driver) Start(conf *config.WebDriverConfig) error {
 
 	ready := make(chan bool, 1)
 
-	fmt.Println("time", d.timeout.Duration)
-
 	go printLogs(ready, d, output)
 
 	select {
@@ -88,7 +87,7 @@ func (d *driver) Start(conf *config.WebDriverConfig) error {
 	}
 }
 
-func (d *driver) Stop() error {
+func (d *Driver) Stop() error {
 	if d.cmd == nil {
 		return nil
 	}
@@ -101,7 +100,7 @@ func (d *driver) Stop() error {
 	return nil
 }
 
-func (d *driver) IsReady(c *client) (bool, error) {
+func (d *Driver) IsReady(c *client) (bool, error) {
 	var response struct {
 		Value struct {
 			Ready   bool   `json:"ready"`
@@ -119,7 +118,7 @@ func (d *driver) IsReady(c *client) (bool, error) {
 	return response.Value.Ready, nil
 }
 
-func printLogs(ready chan<- bool, d *driver, output io.ReadCloser) {
+func printLogs(ready chan<- bool, d *Driver, output io.ReadCloser) {
 	scanner := bufio.NewScanner(output)
 
 	for scanner.Scan() {

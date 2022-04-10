@@ -9,7 +9,7 @@ import (
 )
 
 // OpenURL opens a new window with the given URL.
-func (s *session) OpenURL(url string) {
+func (s *Session) OpenURL(url string) {
 	requestBody := struct {
 		URL string `json:"url"`
 	}{url}
@@ -31,7 +31,7 @@ func (s *session) OpenURL(url string) {
 }
 
 // GetCurrentURL returns the current URL of the browsing context.
-func (s *session) GetCurrentURL() string {
+func (s *Session) GetCurrentURL() string {
 	res, err := s.api.ExecuteRequestVoid(
 		http.MethodGet,
 		fmt.Sprintf("/session/%s/url", s.id),
@@ -50,7 +50,7 @@ func (s *session) GetCurrentURL() string {
 }
 
 // Refresh refreshes the current page.
-func (s *session) Refresh() {
+func (s *Session) Refresh() {
 	res, err := s.api.ExecuteRequestVoid(
 		http.MethodPost,
 		fmt.Sprintf("/session/%s/refresh", s.id),
@@ -67,7 +67,7 @@ func (s *session) Refresh() {
 }
 
 // Back navigates back in the browser history.
-func (s *session) Back() {
+func (s *Session) Back() {
 	res, err := s.api.ExecuteRequestVoid(
 		http.MethodPost,
 		fmt.Sprintf("/session/%s/back", s.id),
@@ -84,7 +84,7 @@ func (s *session) Back() {
 }
 
 // Forward navigates forward in the browser history.
-func (s *session) Forward() {
+func (s *Session) Forward() {
 	res, err := s.api.ExecuteRequestVoid(
 		http.MethodPost,
 		fmt.Sprintf("/session/%s/forward", s.id),
@@ -101,7 +101,7 @@ func (s *session) Forward() {
 }
 
 // GetTitle returns the current page title.
-func (s *session) GetTitle() string {
+func (s *Session) GetTitle() string {
 	res, err := s.api.ExecuteRequestVoid(
 		http.MethodGet,
 		fmt.Sprintf("/session/%s/title", s.id),

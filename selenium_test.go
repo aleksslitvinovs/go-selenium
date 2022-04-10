@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/theRealAlpaca/go-selenium"
+	"github.com/theRealAlpaca/go-selenium/types"
 )
 
 func Test(t *testing.T) {
@@ -16,21 +17,33 @@ func Test(t *testing.T) {
 		panic(err)
 	}
 
-	c, err := selenium.NewClient(d, nil)
+	_, err = selenium.SetClient(d, nil)
 	if err != nil {
 		panic(err)
 	}
 
-	defer c.MustStop()
-
-	s, err := c.CreateSession()
+	_, err = selenium.CreateSession()
 	if err != nil {
 		panic(err)
 	}
 
-	// s.OpenURL("https://app.stage.loadero.com/login")
+	selenium.SetTest(JitsiTest)
+
+	selenium.Run()
+}
+
+func JitsiTest(s types.Sessioner) {
+	s.OpenURL("https://meet.jit.si/LoaderoWebRTC_R")
+
+	s.NewElement(`[aria-label="Join meeting"]`).
+		WaitFor(time.Second * 5).UntilIsVisible().
+		Click()
+
+	time.Sleep(10 * time.Second)
+}
+
+func MyTest(s types.Sessioner) {
 	s.OpenURL("https://app.stage.loadero.com/login")
-	s.NewElement("#email")
 	// s.NewWindow()
 
 	// fmt.Println(s.GetWindowHandle())
@@ -53,8 +66,9 @@ func Test(t *testing.T) {
 	// s.Forward()
 	// fmt.Println(s.GetTitle())
 
-	s.NewElement(".sign-in-form")
-	s.NewElement("#username").
+	s.NewElement(".sign-in-form").WaitFor(time.Second * 5).UntilIsVisible()
+
+	s.NewElement("#username_test").
 		WaitFor(time.Second * 5).UntilIsVisible().
 		SendKeys("testing@loadero.abc")
 

@@ -3,7 +3,6 @@ package webelement
 import (
 	"fmt"
 	"net/http"
-	"time"
 
 	"github.com/pkg/errors"
 	"github.com/theRealAlpaca/go-selenium/api"
@@ -94,35 +93,4 @@ func (we *webElement) Clear() error {
 	}
 
 	return nil
-}
-
-func (we *webElement) setElementID() {
-	if we.id != "" {
-		return
-	}
-
-	intialSettings := *we.settings
-
-	we.settings.IgnoreNotFound = true
-
-	defer func() {
-		we.settings = &intialSettings
-	}()
-
-	timeout := time.Now().Add(we.settings.RetryTimeout.Duration)
-
-	for time.Now().Before(timeout) {
-		if id := we.FindElement(); id != "" {
-			we.id = id
-
-			return
-		}
-
-		time.Sleep(we.settings.PollInterval.Duration)
-	}
-
-	util.HandleError(
-		we.session,
-		errors.Errorf("Element %q not found", we.Selector),
-	)
 }

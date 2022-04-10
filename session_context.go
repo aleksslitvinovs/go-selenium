@@ -16,7 +16,7 @@ var (
 	window handleType = "window"
 )
 
-func (s *session) GetWindowHandle() string {
+func (s *Session) GetWindowHandle() string {
 	res, err := s.api.ExecuteRequestVoid(
 		http.MethodGet,
 		fmt.Sprintf("/session/%s/window", s.id),
@@ -34,7 +34,7 @@ func (s *session) GetWindowHandle() string {
 	return res.Value.(string)
 }
 
-func (s *session) GetWindowHandles() []string {
+func (s *Session) GetWindowHandles() []string {
 	res, err := s.api.ExecuteRequestVoid(
 		http.MethodGet,
 		fmt.Sprintf("/session/%s/window/handles", s.id),
@@ -59,7 +59,7 @@ func (s *session) GetWindowHandles() []string {
 	return handles
 }
 
-func (s *session) CloseWindow() {
+func (s *Session) CloseWindow() {
 	res, err := s.api.ExecuteRequestVoid(
 		http.MethodDelete,
 		fmt.Sprintf("/session/%s/window", s.id),
@@ -82,7 +82,7 @@ func (s *session) CloseWindow() {
 	}
 }
 
-func (s *session) SwitchHandle(handle string) {
+func (s *Session) SwitchHandle(handle string) {
 	payload := struct {
 		Handle string `json:"handle"`
 	}{handle}
@@ -103,15 +103,15 @@ func (s *session) SwitchHandle(handle string) {
 	}
 }
 
-func (s *session) NewTab() *types.Handle {
+func (s *Session) NewTab() *types.Handle {
 	return s.newWindowWithType(tab)
 }
 
-func (s *session) NewWindow() *types.Handle {
+func (s *Session) NewWindow() *types.Handle {
 	return s.newWindowWithType(window)
 }
 
-func (s *session) newWindowWithType(ht handleType) *types.Handle {
+func (s *Session) newWindowWithType(ht handleType) *types.Handle {
 	payload := struct {
 		HandleType string `json:"type"`
 	}{string(ht)}
@@ -137,7 +137,7 @@ func (s *session) newWindowWithType(ht handleType) *types.Handle {
 
 // FIXME: Allow passing handle ID instead of int
 // https://www.w3.org/TR/webdriver/#switch-to-frame
-func (s *session) SwitchToFrame(id int) {
+func (s *Session) SwitchToFrame(id int) {
 	payload := struct {
 		ID int `json:"id"`
 	}{id}
@@ -158,7 +158,7 @@ func (s *session) SwitchToFrame(id int) {
 	}
 }
 
-func (s *session) SwitchToParentFrame() {
+func (s *Session) SwitchToParentFrame() {
 	res, err := s.api.ExecuteRequestVoid(
 		http.MethodPost,
 		fmt.Sprintf("/session/%s/frame/parent", s.id),

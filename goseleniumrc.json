@@ -1,5 +1,5 @@
 {
-  "logging": "debug",
+  "logging": "info",
   "soft_asserts": false,
   "raise_errors_automatically": true,
   "element_settings": {
@@ -12,6 +12,37 @@
     "auto_start": true,
     "path": "/Users/aleksslitvinovs/Downloads/chromedriver",
     "url": "http://localhost",
-    "timeout": "10s"
+    "timeout": "10s",
+    "capabilities": {
+      "browserName": "chrome",
+      "goog:chromeOptions": {
+        "args": [
+          "--no-sandbox",
+          "--use-fake-device-for-media-stream"
+        ],
+        "prefs": {
+          "profile": {
+            "content_settings": {
+              "exceptions": {
+                "media_stream_camera": {
+                  "https://*,*": {
+                    "setting": 1
+                  }
+                },
+                "media_stream_mic": {
+                  "https://*,*": {
+                    "setting": 1
+                  }
+                }
+              }
+            },
+            "default_content_setting_values": {
+              "automatic_downloads": 1,
+              "notifications": 1
+            }
+          }
+        }
+      }
+    }
   }
 }

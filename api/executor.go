@@ -11,6 +11,7 @@ import (
 	"github.com/TylerBrock/colorjson"
 	"github.com/fatih/color"
 	"github.com/pkg/errors"
+	"github.com/theRealAlpaca/go-selenium/config"
 	"github.com/theRealAlpaca/go-selenium/logger"
 	"github.com/theRealAlpaca/go-selenium/types"
 )
@@ -105,10 +106,12 @@ func (a *APIClient) executeRequestRaw(
 		return nil, errors.Wrap(err, "failed to create request")
 	}
 
-	logger.Custom(
-		color.HiCyanString("-> Request "),
-		fmt.Sprintf("%s %s\n\t%s", method, url, formatJSON(body)),
-	)
+	if config.Config.LogLevel == logger.DebugLvl {
+		logger.Custom(
+			color.HiCyanString("-> Request "),
+			fmt.Sprintf("%s %s\n\t%s", method, url, formatJSON(body)),
+		)
+	}
 
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
@@ -130,11 +133,16 @@ func (a *APIClient) executeRequestRaw(
 		return []byte{}, errors.Wrap(err, "failed to unmarshal response")
 	}
 
+	if config.Config.LogLevel == logger.DebugLvl {
+		logger.Custom(
+			color.HiGreenString("<- Response "),
+			formatJSON(b), "\n\n",
+		)
+	}
+
 	if getStatusClass(res.StatusCode) != classSuccessful {
 		return b, errors.Wrap(types.ErrFailedRequest, response.String())
 	}
-
-	logger.Custom(color.HiGreenString("<- Response "), formatJSON(b), "\n\n")
 
 	return b, nil
 }

@@ -17,7 +17,7 @@ const (
 	WarnLvl   LevelName = "warn"
 	ErrorLvl  LevelName = "error"
 	FatalLvl  LevelName = "fatal"
-	CustomLvl LevelName = "custom"
+	customLvl LevelName = "custom"
 )
 
 type level struct {
@@ -32,7 +32,7 @@ var (
 	warn   = level{WarnLvl, 2, color.YellowString}
 	err    = level{ErrorLvl, 3, color.HiRedString}
 	fatal  = level{FatalLvl, 4, color.HiRedString}
-	custom = level{CustomLvl, 5, color.WhiteString}
+	custom = level{customLvl, 5, color.WhiteString}
 
 	l = &logger{
 		Level:  info,
@@ -82,7 +82,7 @@ func write(lvl level, msg string) {
 		return
 	}
 
-	if lvl.name == CustomLvl {
+	if lvl.name == customLvl {
 		l.Logger.SetFlags(0)
 		defer l.Logger.SetFlags(log.LstdFlags)
 
@@ -112,7 +112,7 @@ func Info(msg ...interface{}) {
 }
 
 func Infof(msg string, v ...interface{}) {
-	write(debug, fmt.Sprintf(msg, v...))
+	write(info, fmt.Sprintf(msg, v...))
 }
 
 func Warn(msg ...interface{}) {

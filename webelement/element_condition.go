@@ -8,6 +8,12 @@ import (
 	"github.com/theRealAlpaca/go-selenium/util"
 )
 
+func (we *webElement) IsPresent() bool {
+	_, err := we.findElement()
+
+	return err == nil
+}
+
 func (we *webElement) IsVisible() bool {
 	return we.handleCondition(
 		func() (*api.Response, error) { return we.isVisible() },
@@ -29,10 +35,6 @@ func (we *webElement) IsSelected() bool {
 func (we *webElement) isVisible() (*api.Response, error) {
 	we.setElementID()
 
-	if we.id == "" {
-		return &api.Response{}, ErrWebIDNotSet
-	}
-
 	//nolint:wrapcheck
 	return we.api.ExecuteRequest(
 		http.MethodGet,
@@ -46,10 +48,6 @@ func (we *webElement) isVisible() (*api.Response, error) {
 func (we *webElement) isEnabled() (*api.Response, error) {
 	we.setElementID()
 
-	if we.id == "" {
-		return &api.Response{}, ErrWebIDNotSet
-	}
-
 	//nolint:wrapcheck
 	return we.api.ExecuteRequest(
 		http.MethodGet,
@@ -62,10 +60,6 @@ func (we *webElement) isEnabled() (*api.Response, error) {
 
 func (we *webElement) isSelected() (*api.Response, error) {
 	we.setElementID()
-
-	if we.id == "" {
-		return &api.Response{}, ErrWebIDNotSet
-	}
 
 	//nolint:wrapcheck
 	return we.api.ExecuteRequest(

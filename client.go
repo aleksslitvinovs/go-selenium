@@ -14,24 +14,26 @@ import (
 	"github.com/theRealAlpaca/go-selenium/types"
 )
 
-var (
-	started = false
-)
-
 type client struct {
 	api      *api.APIClient
-	driver   *driver
-	sessions map[*session]bool
+	driver   *Driver
+	sessions map[*Session]bool
+	runner   *runner
 }
 
 type Opts struct {
 	ConfigPath string
 }
 
+var (
+	Client  *client
+	started = false
+)
+
 // NewClient creates a new client instance with the provided driver. Based on
 // the configuration settings, a driver may be started. Optionally, Opts can be
 // provided for additional configuration.
-func NewClient(d *driver, opts *Opts) (types.Clienter, error) {
+func SetClient(d *Driver, opts *Opts) (*client, error) {
 	if d == nil {
 		return nil, errors.Wrap(
 			types.ErrInvalidParameters, "driver cannot be nil",
@@ -62,13 +64,30 @@ func NewClient(d *driver, opts *Opts) (types.Clienter, error) {
 		}
 	}
 
-	c := &client{
+	Client = &client{
 		api:      &api.APIClient{BaseURL: d.remoteURL},
 		driver:   d,
-		sessions: make(map[*session]bool),
+		sessions: make(map[*Session]bool),
+		runner:   Runner,
 	}
 
-	return c, nil
+	return Client, nil
+}
+
+func (c *client) SetBeforeAll(f func()) {
+	c.runner.beforeAll = f
+}
+
+func (c *client) SetBeforeEach(f func()) {
+	c.runner.beforeEach = f
+}
+
+func (c *client) SetAfterEach(f func()) {
+	c.runner.afterEach = f
+}
+
+func (c *client) SetAfterAll(f func()) {
+	c.runner.afterAll = f
 }
 
 func gracefulShutdown() {
@@ -81,29 +100,33 @@ func gracefulShutdown() {
 	os.Exit(0)
 }
 
-func (c *client) MustStop() {
-	err := c.Stop()
+func MustStopClient() {
+	if Client == nil {
+		return
+	}
+
+	err := StopClient()
 	if err != nil {
 		panic(errors.Wrap(err, "failed to stop driver"))
 	}
 }
 
-func (c *client) Stop() error {
+func StopClient() error {
 	var tempErr error
 
 	// Driver must be stopped even if session cannot be deleted.
 	defer func() {
-		if c.driver == nil {
+		if Client.driver == nil {
 			return
 		}
 
-		err := c.driver.Stop()
+		err := Client.driver.Stop()
 		if err != nil {
 			tempErr = errors.Wrap(err, "failed to stop driver process")
 		}
 	}()
 
-	for s, v := range c.sessions {
+	for s, v := range Client.sessions {
 		if !v {
 			continue
 		}
@@ -118,7 +141,7 @@ func (c *client) Stop() error {
 			}
 		}
 
-		delete(c.sessions, s)
+		delete(Client.sessions, s)
 	}
 
 	return tempErr

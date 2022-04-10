@@ -2,7 +2,6 @@ package config
 
 import (
 	"encoding/json"
-	"fmt"
 	"os"
 	"time"
 
@@ -22,10 +21,11 @@ type ElementSettings struct {
 
 //nolint:tagliatelle
 type WebDriverConfig struct {
-	AutoStart    bool       `json:"auto_start"`
-	PathToBinary string     `json:"path"`
-	URL          string     `json:"url"`
-	Timeout      types.Time `json:"timeout"`
+	AutoStart    bool                   `json:"auto_start"`
+	PathToBinary string                 `json:"path"`
+	URL          string                 `json:"url"`
+	Timeout      types.Time             `json:"timeout"`
+	Capabalities map[string]interface{} `json:"capabilities"`
 }
 
 //nolint:tagliatelle
@@ -79,7 +79,6 @@ func ReadConfig(configPath string) error {
 		panic(err)
 	}
 
-	fmt.Println("config", c.WebDriver.Timeout.Duration)
 	c.validateConfig()
 
 	if err := c.writeToConfig(configPath); err != nil {

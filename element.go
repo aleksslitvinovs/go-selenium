@@ -14,7 +14,7 @@ type Element struct {
 	SelectorType string                  `json:"using"`
 	Selector     string                  `json:"value"`
 	Settings     *config.ElementSettings `json:"-"`
-	Session      *session                `json:"-"`
+	Session      *Session                `json:"-"`
 }
 
 var (
@@ -25,7 +25,7 @@ var (
 	}
 )
 
-func (s *session) NewElement(selector string) types.WebElementer {
+func (s *Session) NewElement(selector string) types.WebElementer {
 	if config.Config.ElementSettings.RetryTimeout.Milliseconds() == 0 {
 		logger.Error(`"retry_timeout" must not be 0`)
 

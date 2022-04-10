@@ -7,52 +7,64 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/theRealAlpaca/go-selenium/api"
+	"github.com/theRealAlpaca/go-selenium/config"
 	"github.com/theRealAlpaca/go-selenium/types"
 	"github.com/theRealAlpaca/go-selenium/util"
 )
 
-func (c *client) CreateSession() (types.Sessioner, error) {
-	err := c.waitUntilIsReady(10 * time.Second)
+func CreateSession() (types.Sessioner, error) {
+	if Client == nil {
+		return nil, errors.New("client is not set")
+	}
+
+	err := Client.waitUntilIsReady(10 * time.Second)
 	if err != nil {
-		return &session{}, errors.Wrap(
+		return &Session{}, errors.Wrap(
 			err, "driver is not ready to start a new session",
 		)
 	}
 
-	req := struct {
-		Capabilities map[string]interface{} `json:"capabilities"`
-	}{
-		make(map[string]interface{}),
+	caps, err := getCapabilities()
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get capabilities")
 	}
 
-	var r struct {
+	req := struct {
+		Capabilities map[string]interface{} `json:"capabilities"`
+	}{caps}
+
+	var response struct {
 		Value struct {
 			SessionID    string                 `json:"sessionId"`
 			Capabilities map[string]interface{} `json:"capabilities"`
 		} `json:"value"`
 	}
 
-	err = c.api.ExecuteRequestCustom(http.MethodPost, "/session", req, &r)
+	err = Client.api.ExecuteRequestCustom(
+		http.MethodPost, "/session", req, &response,
+	)
 	if err != nil {
 		panic(errors.Wrap(err, "failed to start session"))
 	}
 
-	s := &session{
-		url: c.api.BaseURL,
-		id:  r.Value.SessionID,
-		api: &api.APIClient{BaseURL: c.api.BaseURL},
+	s := &Session{
+		url: Client.api.BaseURL,
+		id:  response.Value.SessionID,
+		api: &api.APIClient{BaseURL: Client.api.BaseURL},
 	}
 
 	s.killDriver = make(chan struct{})
 
-	c.sessions[s] = true
+	Client.sessions[s] = true
 
-	go c.sessionListener(s)
+	Client.runner.session = s
+
+	go Client.sessionListener(s)
 
 	return s, nil
 }
 
-func (s *session) DeleteSession() {
+func (s *Session) DeleteSession() {
 	res, err := s.api.ExecuteRequestVoid(
 		http.MethodDelete,
 		fmt.Sprintf("/session/%s", s.id),
@@ -70,10 +82,24 @@ func (s *session) DeleteSession() {
 	s.killDriver <- struct{}{}
 }
 
-func (c *client) sessionListener(s *session) {
+func getCapabilities() (map[string]interface{}, error) {
+	caps := config.Config.WebDriver.Capabalities
+	if caps == nil {
+		caps = make(map[string]interface{})
+	}
+
+	finalCaps := make(map[string]interface{})
+
+	finalCaps["alwaysMatch"] = caps
+
+	return finalCaps, nil
+}
+
+func (c *client) sessionListener(s *Session) {
+	// TODO: Kill only the session that is being used, not the whole driver.
 	<-s.killDriver
 
 	delete(c.sessions, s)
 
-	c.MustStop()
+	MustStopClient()
 }

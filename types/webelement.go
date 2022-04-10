@@ -3,6 +3,8 @@ package types
 import "time"
 
 type Waiterer interface {
+	UntilIsPresent() WebElementer
+	UntilIsNotPresent() WebElementer
 	UntilIsVisible() WebElementer
 	UntilIsNotVisible() WebElementer
 	UntilIsEnabled() WebElementer
@@ -12,7 +14,6 @@ type Waiterer interface {
 }
 
 type WebElementer interface {
-	FindElement() string
 	WaitFor(timeout time.Duration) Waiterer
 	// TODO: Handle error
 	GetText() (string, error)
