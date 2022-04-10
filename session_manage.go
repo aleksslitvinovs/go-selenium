@@ -24,14 +24,9 @@ func CreateSession() (types.Sessioner, error) {
 		)
 	}
 
-	caps, err := getCapabilities()
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to get capabilities")
-	}
-
 	req := struct {
 		Capabilities map[string]interface{} `json:"capabilities"`
-	}{caps}
+	}{getCapabilities()}
 
 	var response struct {
 		Value struct {
@@ -82,7 +77,7 @@ func (s *Session) DeleteSession() {
 	s.killDriver <- struct{}{}
 }
 
-func getCapabilities() (map[string]interface{}, error) {
+func getCapabilities() map[string]interface{} {
 	caps := config.Config.WebDriver.Capabalities
 	if caps == nil {
 		caps = make(map[string]interface{})
@@ -92,7 +87,7 @@ func getCapabilities() (map[string]interface{}, error) {
 
 	finalCaps["alwaysMatch"] = caps
 
-	return finalCaps, nil
+	return finalCaps
 }
 
 func (c *client) sessionListener(s *Session) {
