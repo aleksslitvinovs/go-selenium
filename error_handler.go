@@ -1,14 +1,12 @@
-package util
+package selenium
 
 import (
 	"github.com/pkg/errors"
-	"github.com/theRealAlpaca/go-selenium/api"
-	"github.com/theRealAlpaca/go-selenium/config"
 	"github.com/theRealAlpaca/go-selenium/logger"
 	"github.com/theRealAlpaca/go-selenium/types"
 )
 
-func HandleError(s types.Sessioner, err error) {
+func HandleError(err error) {
 	if err == nil {
 		return
 	}
@@ -19,21 +17,21 @@ func HandleError(s types.Sessioner, err error) {
 		panic(err)
 	}
 
-	if config.Config.SoftAsserts {
+	if Config.SoftAsserts {
 		return
 	}
 
 	panic(err)
 }
 
-func HandleResponseError(s types.Sessioner, res *api.ErrorResponse) {
+func HandleResponseError(res *ErrorResponse) {
 	if res == nil {
 		return
 	}
 
 	logger.Error(res.String())
 
-	if config.Config.SoftAsserts {
+	if Config.SoftAsserts {
 		return
 	}
 

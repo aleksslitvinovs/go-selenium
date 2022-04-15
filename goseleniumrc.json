@@ -2,7 +2,7 @@
   "logging": "debug",
   "soft_asserts": false,
   "runner": {
-    "parallel_runs": 1
+    "parallel_runs": 2
   },
   "raise_errors_automatically": true,
   "element_settings": {

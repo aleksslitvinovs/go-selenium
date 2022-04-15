@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/theRealAlpaca/go-selenium"
-	"github.com/theRealAlpaca/go-selenium/types"
 )
 
 func Test(t *testing.T) {
@@ -16,19 +15,18 @@ func Test(t *testing.T) {
 	// if err != nil {
 	// 	panic(err)
 	// }
-
 	_, err := selenium.StartClient(nil, nil)
 	if err != nil {
 		panic(err)
 	}
 
 	selenium.SetTest(JitsiTest)
-	selenium.SetTest(MyTest)
+	// selenium.SetTest(MyTest)
 
 	selenium.Run()
 }
 
-func JitsiTest(s types.Sessioner) {
+func JitsiTest(s *selenium.Session) {
 	s.OpenURL("https://meet.jit.si/LoaderoWebRTC_R")
 
 	s.NewElement(`[aria-label="Join meeting"]`).
@@ -38,7 +36,7 @@ func JitsiTest(s types.Sessioner) {
 	time.Sleep(10 * time.Second)
 }
 
-func MyTest(s types.Sessioner) {
+func MyTest(s *selenium.Session) {
 	s.OpenURL("https://app.stage.loadero.com/login")
 	// s.NewWindow()
 
@@ -61,7 +59,6 @@ func MyTest(s types.Sessioner) {
 
 	// s.Forward()
 	// fmt.Println(s.GetTitle())
-
 	s.NewElement(".sign-in-form").WaitFor(time.Second * 5).UntilIsVisible()
 
 	s.NewElement("#username").

@@ -3,15 +3,18 @@ package selenium
 import (
 	"fmt"
 	"os"
+	"runtime/debug"
 	"sync"
 
-	"github.com/theRealAlpaca/go-selenium/config"
 	"github.com/theRealAlpaca/go-selenium/logger"
-	"github.com/theRealAlpaca/go-selenium/types"
 )
 
+// TestFunction describes one test for the given session. It is used in
+// selenium.Run() to execute tests.
+type TestFunction func(s *Session)
+
 type runner struct {
-	tests       map[string]types.TestFunction
+	tests       map[string]TestFunction
 	testCounter int
 	hadErrors   bool
 
@@ -21,7 +24,7 @@ type runner struct {
 	afterAll   func()
 }
 
-var r = &runner{tests: make(map[string]types.TestFunction)}
+var r = &runner{tests: make(map[string]TestFunction)}
 
 func Run() {
 	defer func() {
@@ -32,7 +35,7 @@ func Run() {
 		}
 	}()
 
-	if Client == nil || config.Config == nil {
+	if Client == nil || Config == nil {
 		logger.Error("Client is not set")
 
 		r.hadErrors = true
@@ -42,12 +45,12 @@ func Run() {
 
 	runBeforeAll()
 
-	pr := config.Config.Runner.ParallelRuns
+	pr := Config.Runner.ParallelRuns
 	if pr < 1 {
 		pr = 1
 	}
 
-	jobs := make(chan types.TestFunction, pr)
+	jobs := make(chan TestFunction, pr)
 	defer close(jobs)
 
 	wg := &sync.WaitGroup{}
@@ -72,14 +75,14 @@ func Run() {
 	runAfterAll()
 }
 
-func worker(tf <-chan types.TestFunction, wg *sync.WaitGroup) {
+func worker(tf <-chan TestFunction, wg *sync.WaitGroup) {
 	for t := range tf {
 		runTest(t, wg)
 	}
 }
 
-func runTest(fn types.TestFunction, wg *sync.WaitGroup) {
-	var s types.Sessioner
+func runTest(fn TestFunction, wg *sync.WaitGroup) {
+	var s *Session
 
 	defer wg.Done()
 
@@ -90,6 +93,8 @@ func runTest(fn types.TestFunction, wg *sync.WaitGroup) {
 		if err == nil {
 			return
 		}
+
+		debug.PrintStack()
 
 		r.hadErrors = true
 
@@ -103,12 +108,12 @@ func runTest(fn types.TestFunction, wg *sync.WaitGroup) {
 		}
 	}()
 
-	s, err := CreateSession()
+	s, err := NewSession()
 	if err != nil {
 		panic(err)
 	}
 
-	Client.sessions[s.(*Session)] = true
+	Client.sessions[s] = true
 
 	fn(s)
 }
@@ -153,7 +158,7 @@ func SetAfterAll(f func()) {
 	r.afterAll = f
 }
 
-func SetTest(fn types.TestFunction, name ...string) {
+func SetTest(fn TestFunction, name ...string) {
 	defer func() {
 		r.testCounter++
 	}()
@@ -173,7 +178,7 @@ func SetTest(fn types.TestFunction, name ...string) {
 	r.tests[name[0]] = fn
 }
 
-func SetTests(fns map[string]types.TestFunction) {
+func SetTests(fns map[string]TestFunction) {
 	for n, fn := range fns {
 		SetTest(fn, n)
 	}

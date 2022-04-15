@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"github.com/theRealAlpaca/go-selenium/config"
 	"github.com/theRealAlpaca/go-selenium/logger"
 	"github.com/theRealAlpaca/go-selenium/types"
 )
@@ -54,7 +53,7 @@ func NewDriver(
 	}, nil
 }
 
-func (d *Driver) Start(conf *config.WebDriverConfig) error {
+func (d *Driver) Start(conf *WebDriverConfig) error {
 	d.timeout = conf.Timeout
 
 	if d.webDriverPath == "" {

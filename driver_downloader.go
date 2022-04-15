@@ -1,4 +1,4 @@
-package util
+package selenium
 
 import (
 	"archive/tar"
@@ -19,8 +19,8 @@ import (
 )
 
 const (
-	Chrome  = "chromedriver"
-	Firefox = "geckodriver"
+	chromedriver = "chromedriver"
+	geckodriver  = "geckodriver"
 )
 
 var (
@@ -31,7 +31,7 @@ var (
 	firefoxDriverURL = "https://github.com/mozilla/geckodriver/releases/download/v0.30.0/geckodriver-v0.30.0-%s" //nolint:lll
 )
 
-func DownloadDriver(
+func downloadDriver(
 	wg *sync.WaitGroup, driverName string,
 ) error {
 	defer wg.Done()
@@ -41,7 +41,7 @@ func DownloadDriver(
 	var binaryData []byte
 
 	switch driverName {
-	case Chrome:
+	case chromedriver:
 		platform, err := getPlatformForChrome()
 		if err != nil {
 			return errors.Wrap(err, "failed to get platform")
@@ -51,7 +51,7 @@ func DownloadDriver(
 		if err != nil {
 			return errors.Wrap(err, "failed to download chromedriver")
 		}
-	case Firefox:
+	case geckodriver:
 		platform, err := getPlatformForFirefox()
 		if err != nil {
 			return errors.Wrap(err, "failed to get platform")
@@ -175,7 +175,7 @@ func saveBinary(
 ) error {
 	archiveName := fmt.Sprintf("%s.zip", driverName)
 
-	if driverName == Firefox {
+	if driverName == geckodriver {
 		if strings.Contains(platform, "win") {
 			archiveName = fmt.Sprintf("%s.zip", driverName)
 		} else {

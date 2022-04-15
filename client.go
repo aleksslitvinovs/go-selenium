@@ -8,14 +8,11 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"github.com/theRealAlpaca/go-selenium/api"
-	"github.com/theRealAlpaca/go-selenium/config"
 	"github.com/theRealAlpaca/go-selenium/logger"
-	"github.com/theRealAlpaca/go-selenium/util"
 )
 
 type client struct {
-	api      *api.APIClient
+	api      *APIClient
 	driver   *Driver
 	sessions map[*Session]bool
 }
@@ -43,12 +40,12 @@ func StartClient(d *Driver, opts *Opts) (*client, error) {
 	if d == nil {
 		wg.Add(1)
 
-		err := util.DownloadDriver(wg, util.Chrome)
+		err := downloadDriver(wg, chromedriver)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to download chromedriver")
 		}
 
-		d, err = NewDriver(util.Chrome, "http://localhost:4445")
+		d, err = NewDriver(chromedriver, "http://localhost:4445")
 		if err != nil {
 			return nil, errors.Wrap(
 				err, "failed to create browser default driver",
@@ -58,24 +55,24 @@ func StartClient(d *Driver, opts *Opts) (*client, error) {
 
 	go gracefulShutdown()
 
-	err := config.ReadConfig(opts.ConfigPath)
+	err := ReadConfig(opts.ConfigPath)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to read config")
 	}
 
-	logger.SetLogLevel(config.Config.LogLevel)
+	logger.SetLogLevel(Config.LogLevel)
 
 	wg.Wait()
 
-	if !config.Config.WebDriver.ManualStart {
-		err := d.Start(config.Config.WebDriver)
+	if !Config.WebDriver.ManualStart {
+		err := d.Start(Config.WebDriver)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to launch driver")
 		}
 	}
 
 	Client = &client{
-		api:      &api.APIClient{BaseURL: d.remoteURL},
+		api:      &APIClient{BaseURL: d.remoteURL},
 		driver:   d,
 		sessions: make(map[*Session]bool),
 	}
@@ -121,10 +118,11 @@ func StopClient() error {
 
 	for s, v := range Client.sessions {
 		if v {
+			// TODO: Handle already deleted session
 			s.DeleteSession()
 		}
 
-		if config.Config.RaiseErrorsAutomatically {
+		if Config.RaiseErrorsAutomatically {
 			e := s.RaiseErrors()
 
 			if e != "" {
@@ -147,7 +145,7 @@ func (c *client) RaiseErrors() {
 		}
 
 		logger.Errorf(
-			"Errors occurred in %s session:\n%s\n", s.id, errors,
+			"Errors occurred in %s session:\n%s\n", s.GetID(), errors,
 		)
 	}
 }

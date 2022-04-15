@@ -1,45 +1,124 @@
 package selenium
 
 import (
+	"fmt"
+	"net/http"
 	"time"
 
-	"github.com/theRealAlpaca/go-selenium/config"
+	"github.com/pkg/errors"
 	"github.com/theRealAlpaca/go-selenium/logger"
 	"github.com/theRealAlpaca/go-selenium/selector"
 	"github.com/theRealAlpaca/go-selenium/types"
-	"github.com/theRealAlpaca/go-selenium/webelement"
 )
 
 type Element struct {
-	SelectorType string                  `json:"using"`
-	Selector     string                  `json:"value"`
-	Settings     *config.ElementSettings `json:"-"`
-	Session      *Session                `json:"-"`
+	Selector     string `json:"value"`
+	SelectorType string `json:"using"`
+
+	id       string
+	session  *Session
+	settings *ElementSettings
+	api      *APIClient
 }
 
-var (
-	defaultElementSettings = &config.ElementSettings{
-		PollInterval: types.Time{Duration: 500 * time.Millisecond},
-		RetryTimeout: types.Time{Duration: 5 * time.Second},
-		SelectorType: selector.CSS,
-	}
+var defaultSettings = &ElementSettings{
+	PollInterval: types.Time{Duration: 500 * time.Millisecond},
+	RetryTimeout: types.Time{Duration: 5 * time.Second},
+	SelectorType: selector.CSS,
+}
+
+const (
+	// Based on https://www.w3.org/TR/webdriver/#elements
+	webElementID    = "element-6066-11e4-a52e-4f735466cecf"
+	legacyElementID = "ELEMENT"
 )
 
-func (s *Session) NewElement(selector string) types.WebElementer {
-	if config.Config.ElementSettings.RetryTimeout.Milliseconds() == 0 {
-		logger.Error(`"retry_timeout" must not be 0`)
-
-		s.DeleteSession()
+func (s *Session) NewElement(selector string) *Element {
+	return &Element{
+		Selector:     selector,
+		SelectorType: s.defaultLocator,
+		settings:     defaultSettings,
+		session:      s,
+		api:          s.api,
 	}
-
-	settings := config.Config.ElementSettings
-	if settings == nil {
-		settings = defaultElementSettings
-	}
-
-	return webelement.NewElement("", s, selector, settings, s.api)
 }
 
-func SetSettings(settings *config.ElementSettings) {
-	defaultElementSettings = settings
+func (we *Element) setElementID() {
+	if we.id != "" {
+		return
+	}
+
+	intialSettings := *we.settings
+
+	we.settings.IgnoreNotFound = true
+
+	defer func() {
+		we.settings = &intialSettings
+	}()
+
+	timeout := time.Now().Add(we.settings.RetryTimeout.Duration)
+
+	var err error
+
+	for time.Now().Before(timeout) {
+		id, err := we.findElement()
+		if err != nil || id == "" {
+			time.Sleep(we.settings.PollInterval.Duration)
+
+			continue
+		}
+
+		we.id = id
+
+		return
+	}
+
+	if err != nil {
+		logger.Debugf("An error occurred while finding element: %s", err)
+	}
+
+	HandleError(
+		errors.Errorf(
+			"Element %q (%s) not found", we.Selector, we.SelectorType,
+		),
+	)
+}
+
+func (we *Element) findElement() (string, error) {
+	res, err := we.api.ExecuteRequest(
+		http.MethodPost,
+		fmt.Sprintf("/session/%s/element", we.session.GetID()),
+		we,
+	)
+	if err != nil {
+		return "", errors.Wrap(err, "failed to find element")
+	}
+
+	v, ok := res.Value.(map[string]string)
+	if !ok {
+		return "", errors.New("failed to convert element's ID response")
+	}
+
+	id := getElementID(v)
+
+	if id == "" {
+		return "", errors.New("failed to get element id")
+	}
+
+	return id, nil
+}
+
+func getElementID(elements map[string]string) string {
+	supportedIDs := []string{webElementID, legacyElementID}
+
+	for _, key := range supportedIDs {
+		e, ok := elements[key]
+		if !ok || e == "" {
+			continue
+		}
+
+		return e
+	}
+
+	return ""
 }

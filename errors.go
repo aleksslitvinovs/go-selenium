@@ -1,4 +1,4 @@
-package api
+package selenium
 
 const (
 	NoSuchElement = "no such element"
