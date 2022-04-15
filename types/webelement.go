@@ -15,11 +15,10 @@ type Waiterer interface {
 
 type WebElementer interface {
 	WaitFor(timeout time.Duration) Waiterer
-	// TODO: Handle error
-	GetText() (string, error)
-	Click() error
-	SendKeys(input string)
-	Clear() error
+	GetText() string
+	Click() WebElementer
+	SendKeys(input string) WebElementer
+	Clear() WebElementer
 	IsVisible() bool
 	IsEnabled() bool
 	IsSelected() bool

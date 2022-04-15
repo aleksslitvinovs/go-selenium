@@ -57,6 +57,18 @@ func NewDriver(
 func (d *Driver) Start(conf *config.WebDriverConfig) error {
 	d.timeout = conf.Timeout
 
+	if d.webDriverPath == "" {
+		return errors.Wrap(
+			types.ErrInvalidParameters, "webdriver path cannot be empty",
+		)
+	}
+
+	if d.port == 0 {
+		return errors.Wrap(
+			types.ErrInvalidParameters, "port cannot be 0",
+		)
+	}
+
 	//nolint:gosec
 	cmd := exec.Command(d.webDriverPath, fmt.Sprintf("--port=%d", d.port))
 	cmd.Stderr = cmd.Stdout
@@ -136,8 +148,10 @@ func printLogs(ready chan<- bool, d *Driver, output io.ReadCloser) {
 			d.Stop() //nolint:errcheck
 		}
 
-		// TODO: Add handling for FF
-		if strings.Contains(line, "ChromeDriver was started successfully") {
+		// Chromedriver is ready
+		if strings.Contains(line, "ChromeDriver was started successfully") ||
+			// GeckoDriver is ready
+			strings.Contains(line, "Listening on") {
 			ready <- true
 		}
 	}

@@ -31,11 +31,9 @@ linters:
     - revive # TODO: Write comments for all exported funcs
     - forcetypeassert # TODO: Enable when finished testing
     - gomnd
-    - gomoddirectives
     - nestif
     - contextcheck
     # default disabled linters
-    - dupl
     - exhaustive
     - exhaustivestruct
     - funlen

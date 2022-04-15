@@ -1,6 +1,9 @@
 {
-  "logging": "info",
+  "logging": "debug",
   "soft_asserts": false,
+  "runner": {
+    "parallel_runs": 1
+  },
   "raise_errors_automatically": true,
   "element_settings": {
     "ignore_not_found": false,
@@ -9,7 +12,7 @@
     "selector_type": "css selector"
   },
   "webdriver": {
-    "auto_start": true,
+    "manual_start": false,
     "path": "/Users/aleksslitvinovs/Downloads/chromedriver",
     "url": "http://localhost",
     "timeout": "10s",

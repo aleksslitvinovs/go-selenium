@@ -26,6 +26,10 @@ func (r *Response) GetValue() interface{} {
 }
 
 func (r *Response) GetErrorReponse() *ErrorResponse {
+	if r == nil {
+		return nil
+	}
+
 	if r.Value == nil {
 		return nil
 	}

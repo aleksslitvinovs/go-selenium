@@ -13,19 +13,17 @@ func HandleError(s types.Sessioner, err error) {
 		return
 	}
 
+	logger.Error(err)
+
 	if !errors.As(err, &types.ErrFailedRequest) {
 		panic(err)
 	}
-
-	s.AddError(err.Error())
 
 	if config.Config.SoftAsserts {
 		return
 	}
 
-	logger.Error(err)
-
-	s.DeleteSession()
+	panic(err)
 }
 
 func HandleResponseError(s types.Sessioner, res *api.ErrorResponse) {
@@ -33,13 +31,11 @@ func HandleResponseError(s types.Sessioner, res *api.ErrorResponse) {
 		return
 	}
 
-	s.AddError(res.String())
+	logger.Error(res.String())
 
 	if config.Config.SoftAsserts {
 		return
 	}
 
-	logger.Error(res.String())
-
-	s.DeleteSession()
+	panic(res.String())
 }

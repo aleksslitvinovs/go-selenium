@@ -78,7 +78,7 @@ func (s *Session) CloseWindow() {
 
 	// If there are no open browsing contexts left, the session is closed.
 	if len(handles) == 0 {
-		s.killDriver <- struct{}{}
+		Client.sessions[s] = false
 	}
 }
 

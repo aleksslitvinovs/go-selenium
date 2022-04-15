@@ -5,14 +5,15 @@ import (
 	"os"
 	"sync"
 
+	"github.com/theRealAlpaca/go-selenium/config"
 	"github.com/theRealAlpaca/go-selenium/logger"
 	"github.com/theRealAlpaca/go-selenium/types"
 )
 
 type runner struct {
-	session     *Session
 	tests       map[string]types.TestFunction
 	testCounter int
+	hadErrors   bool
 
 	beforeAll  func()
 	beforeEach func()
@@ -20,99 +21,160 @@ type runner struct {
 	afterAll   func()
 }
 
-var Runner = &runner{tests: make(map[string]types.TestFunction)}
+var r = &runner{tests: make(map[string]types.TestFunction)}
 
 func Run() {
-	if Runner.session == nil {
-		panic("session is nil")
-	}
-
 	defer func() {
 		MustStopClient()
 
-		if len(Runner.session.errors) > 0 {
+		if r.hadErrors {
 			os.Exit(1)
 		}
 	}()
 
-	RunBeforeAll()
+	if Client == nil || config.Config == nil {
+		logger.Error("Client is not set")
 
-	wg := &sync.WaitGroup{}
-
-	for n, t := range Runner.tests {
-		wg.Add(1)
-		RunBeforeEach()
-		logger.Infof("running test: %s", n)
-
-		go RunTest(t, wg)
-
-		RunAfterEach()
-	}
-
-	wg.Wait()
-
-	RunAfterAll()
-}
-
-func SetTest(fn types.TestFunction, name ...string) {
-	if len(name) == 0 {
-		Runner.tests[fmt.Sprintf("test_%d", Runner.testCounter)] = fn
-		Runner.testCounter += 1
+		r.hadErrors = true
 
 		return
 	}
 
-	Runner.tests[name[0]] = fn
+	runBeforeAll()
+
+	pr := config.Config.Runner.ParallelRuns
+	if pr < 1 {
+		pr = 1
+	}
+
+	jobs := make(chan types.TestFunction, pr)
+	defer close(jobs)
+
+	wg := &sync.WaitGroup{}
+
+	for i := 0; i < pr; i++ {
+		go worker(jobs, wg)
+	}
+
+	for n, t := range r.tests {
+		wg.Add(1)
+
+		runBeforeEach()
+
+		logger.Infof("running test: %s", n)
+		jobs <- t
+
+		runAfterEach()
+	}
+
+	wg.Wait()
+
+	runAfterAll()
 }
 
-func SetTests(fns map[string]types.TestFunction) {
-	for n, fn := range fns {
-		SetTest(fn, n)
+func worker(tf <-chan types.TestFunction, wg *sync.WaitGroup) {
+	for t := range tf {
+		runTest(t, wg)
 	}
 }
 
-func RunBeforeAll() {
-	if Runner.beforeAll != nil {
-		Runner.beforeAll()
-	}
-}
+func runTest(fn types.TestFunction, wg *sync.WaitGroup) {
+	var s types.Sessioner
 
-func RunBeforeEach() {
-	if Runner.beforeEach != nil {
-		Runner.beforeEach()
-	}
-}
-
-func RunTest(fn types.TestFunction, wg *sync.WaitGroup) {
 	defer wg.Done()
 
 	defer func() {
+		s.DeleteSession()
+
 		err := recover()
 		if err == nil {
 			return
 		}
 
-		v, ok := err.(string)
-		if !ok {
-			Runner.session.AddError("unknown error occurred")
+		r.hadErrors = true
 
-			return
+		switch v := err.(type) {
+		case error:
+			s.AddError(v.Error())
+		case string:
+			s.AddError(v)
+		default:
+			s.AddError(fmt.Sprintf("%v", v))
 		}
-
-		Runner.session.AddError(v)
 	}()
 
-	fn(Runner.session)
+	s, err := CreateSession()
+	if err != nil {
+		panic(err)
+	}
+
+	Client.sessions[s.(*Session)] = true
+
+	fn(s)
 }
 
-func RunAfterEach() {
-	if Runner.afterEach != nil {
-		Runner.afterEach()
+func runBeforeAll() {
+	if r.beforeAll != nil {
+		r.beforeAll()
 	}
 }
 
-func RunAfterAll() {
-	if Runner.afterAll != nil {
-		Runner.afterAll()
+func runBeforeEach() {
+	if r.beforeEach != nil {
+		r.beforeEach()
+	}
+}
+
+func runAfterEach() {
+	if r.afterEach != nil {
+		r.afterEach()
+	}
+}
+
+func runAfterAll() {
+	if r.afterAll != nil {
+		r.afterAll()
+	}
+}
+
+func SetBeforeAll(f func()) {
+	r.beforeAll = f
+}
+
+func SetBeforeEach(f func()) {
+	r.beforeEach = f
+}
+
+func SetAfterEach(f func()) {
+	r.afterEach = f
+}
+
+func SetAfterAll(f func()) {
+	r.afterAll = f
+}
+
+func SetTest(fn types.TestFunction, name ...string) {
+	defer func() {
+		r.testCounter++
+	}()
+
+	if len(name) == 0 {
+		r.tests[fmt.Sprintf("test_%d", r.testCounter)] = fn
+
+		return
+	}
+
+	if r.tests[name[0]] != nil {
+		r.tests[fmt.Sprintf("%s_%d", name[0], r.testCounter)] = fn
+
+		return
+	}
+
+	r.tests[name[0]] = fn
+}
+
+func SetTests(fns map[string]types.TestFunction) {
+	for n, fn := range fns {
+		SetTest(fn, n)
 	}
 }

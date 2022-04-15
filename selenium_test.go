@@ -9,25 +9,21 @@ import (
 )
 
 func Test(t *testing.T) {
-	d, err := selenium.NewDriver(
-		"/Users/aleksslitvinovs/Downloads/chromedriver",
-		"http://localhost:4444",
-	)
-	if err != nil {
-		panic(err)
-	}
+	// d, err := selenium.NewDriver(
+	// 	"/Users/aleksslitvinovs/Downloads/chromedriver",
+	// 	"http://localhost:4444",
+	// )
+	// if err != nil {
+	// 	panic(err)
+	// }
 
-	_, err = selenium.SetClient(d, nil)
-	if err != nil {
-		panic(err)
-	}
-
-	_, err = selenium.CreateSession()
+	_, err := selenium.StartClient(nil, nil)
 	if err != nil {
 		panic(err)
 	}
 
 	selenium.SetTest(JitsiTest)
+	selenium.SetTest(MyTest)
 
 	selenium.Run()
 }
@@ -68,7 +64,7 @@ func MyTest(s types.Sessioner) {
 
 	s.NewElement(".sign-in-form").WaitFor(time.Second * 5).UntilIsVisible()
 
-	s.NewElement("#username_test").
+	s.NewElement("#username").
 		WaitFor(time.Second * 5).UntilIsVisible().
 		SendKeys("testing@loadero.abc")
 
@@ -79,6 +75,4 @@ func MyTest(s types.Sessioner) {
 	s.NewElement(".button--primary").
 		WaitFor(time.Second * 5).UntilIsVisible().
 		Click()
-
-	time.Sleep(10 * time.Second)
 }

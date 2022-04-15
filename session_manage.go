@@ -43,18 +43,11 @@ func CreateSession() (types.Sessioner, error) {
 	}
 
 	s := &Session{
-		url: Client.api.BaseURL,
 		id:  response.Value.SessionID,
 		api: &api.APIClient{BaseURL: Client.api.BaseURL},
 	}
 
-	s.killDriver = make(chan struct{})
-
 	Client.sessions[s] = true
-
-	Client.runner.session = s
-
-	go Client.sessionListener(s)
 
 	return s, nil
 }
@@ -74,7 +67,7 @@ func (s *Session) DeleteSession() {
 		util.HandleError(s, errors.Wrap(err, "failed to delete session"))
 	}
 
-	s.killDriver <- struct{}{}
+	Client.sessions[s] = false
 }
 
 func getCapabilities() map[string]interface{} {
@@ -88,13 +81,4 @@ func getCapabilities() map[string]interface{} {
 	finalCaps["alwaysMatch"] = caps
 
 	return finalCaps
-}
-
-func (c *client) sessionListener(s *Session) {
-	// TODO: Kill only the session that is being used, not the whole driver.
-	<-s.killDriver
-
-	delete(c.sessions, s)
-
-	MustStopClient()
 }

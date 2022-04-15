@@ -4,17 +4,13 @@ import (
 	"strings"
 
 	"github.com/theRealAlpaca/go-selenium/api"
+	"github.com/theRealAlpaca/go-selenium/selector"
 	"github.com/theRealAlpaca/go-selenium/types"
 )
 
 type Session struct {
-	id string
-
-	// killDriver is a channel used to kill the client and the driver. Used
-	// internally and should not be used by the user.
-	killDriver chan struct{}
-
-	url string
+	id             string
+	defaultLocator string
 	// TODO: Maybe create a custom struct for handling error types. Maybe just
 	// an alias to string? Maybe could implement Error interface?
 	errors []string
@@ -28,6 +24,14 @@ func (s *Session) GetID() string {
 }
 func (s *Session) AddError(err string) {
 	s.errors = append(s.errors, err)
+}
+
+func (s *Session) UseCSS() {
+	s.defaultLocator = selector.CSS
+}
+
+func (s *Session) UseXPath() {
+	s.defaultLocator = selector.XPath
 }
 
 func (s *Session) RaiseErrors() string {

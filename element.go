@@ -43,11 +43,3 @@ func (s *Session) NewElement(selector string) types.WebElementer {
 func SetSettings(settings *config.ElementSettings) {
 	defaultElementSettings = settings
 }
-
-func UseCSS() {
-	defaultElementSettings.SelectorType = selector.CSS
-}
-
-func UseXPath() {
-	defaultElementSettings.SelectorType = selector.XPath
-}

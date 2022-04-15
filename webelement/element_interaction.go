@@ -6,10 +6,11 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/theRealAlpaca/go-selenium/api"
+	"github.com/theRealAlpaca/go-selenium/types"
 	"github.com/theRealAlpaca/go-selenium/util"
 )
 
-func (we *webElement) GetText() (string, error) {
+func (we *webElement) GetText() string {
 	we.setElementID()
 
 	res, err := we.api.ExecuteRequest(
@@ -20,16 +21,16 @@ func (we *webElement) GetText() (string, error) {
 	if err != nil {
 		errRes := res.GetErrorReponse()
 		if errRes == nil {
-			return "", errors.Wrap(err, "failed to send request to get text")
+			util.HandleError(we.session, err)
 		}
 
 		util.HandleResponseError(we.session, errRes)
 	}
 
-	return res.Value.(string), nil
+	return res.Value.(string)
 }
 
-func (we *webElement) Click() error {
+func (we *webElement) Click() types.WebElementer {
 	we.setElementID()
 
 	res, err := we.api.ExecuteRequest(
@@ -40,16 +41,16 @@ func (we *webElement) Click() error {
 	if err != nil {
 		errRes := res.GetErrorReponse()
 		if errRes == nil {
-			return errors.Wrap(err, "failed to click on element")
+			util.HandleError(we.session, err)
 		}
 
 		util.HandleResponseError(we.session, errRes)
 	}
 
-	return nil
+	return we
 }
 
-func (we *webElement) SendKeys(input string) {
+func (we *webElement) SendKeys(input string) types.WebElementer {
 	we.setElementID()
 
 	payload := struct {
@@ -69,28 +70,40 @@ func (we *webElement) SendKeys(input string) {
 				errors.Wrap(err, "failed to send keys to element"),
 			)
 
-			return
+			return we
 		}
 
 		if errRes.Error == api.NoSuchElement && we.settings.IgnoreNotFound {
-			return
+			return we
 		}
 
 		util.HandleResponseError(we.session, errRes)
 	}
+
+	return we
 }
 
-func (we *webElement) Clear() error {
+func (we *webElement) Clear() types.WebElementer {
 	we.setElementID()
 
-	_, err := we.api.ExecuteRequest(
+	res, err := we.api.ExecuteRequest(
 		http.MethodPost,
 		fmt.Sprintf("/session/%s/element/%s/clear", we.session.GetID(), we.id),
 		we,
 	)
 	if err != nil {
-		return errors.Wrap(err, "failed to send request to clear")
+		errRes := res.GetErrorReponse()
+		if errRes == nil {
+			util.HandleError(
+				we.session,
+				errors.Wrap(err, "failed to send keys to element"),
+			)
+
+			return we
+		}
+
+		util.HandleResponseError(we.session, errRes)
 	}
 
-	return nil
+	return we
 }
