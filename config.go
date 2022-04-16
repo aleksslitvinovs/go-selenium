@@ -37,6 +37,7 @@ type webDriverConfig struct {
 type configParams struct {
 	LogLevel                 logger.LevelName `json:"logging"`
 	SoftAsserts              bool             `json:"soft_asserts"`
+	ScreenshotPath           string           `json:"screenshot_path"`
 	Runner                   *runnerSettings  `json:"runner"`
 	RaiseErrorsAutomatically bool             `json:"raise_errors_automatically"` //nolint:lll
 	ElementSettings          *elementSettings `json:"element_settings,omitempty"` //nolint:lll

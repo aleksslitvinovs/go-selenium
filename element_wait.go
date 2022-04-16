@@ -7,54 +7,54 @@ import (
 	"github.com/theRealAlpaca/go-selenium/logger"
 )
 
-type waiter struct {
-	e       *element
+type Waiter struct {
+	e       *Element
 	timeout time.Duration
 }
 
-func (e *element) WaitFor(timeout time.Duration) *waiter {
-	return &waiter{
+func (e *Element) WaitFor(timeout time.Duration) *Waiter {
+	return &Waiter{
 		e:       e,
 		timeout: timeout,
 	}
 }
 
-func (w *waiter) UntilIsPresent() *element {
+func (w *Waiter) UntilIsPresent() *Element {
 	return waitPresent(w, true)
 }
-func (w *waiter) UntilIsNotPresent() *element {
+func (w *Waiter) UntilIsNotPresent() *Element {
 	return waitPresent(w, false)
 }
 
-func (w *waiter) UntilIsVisible() *element {
+func (w *Waiter) UntilIsVisible() *Element {
 	return waitCondition(w, w.e.isVisible, true, "visible")
 }
-func (w *waiter) UntilIsNotVisible() *element {
+func (w *Waiter) UntilIsNotVisible() *Element {
 	return waitCondition(w, w.e.isVisible, false, "not visible")
 }
 
-func (w *waiter) UntilIsEnabled() *element {
+func (w *Waiter) UntilIsEnabled() *Element {
 	return waitCondition(w, w.e.isEnabled, true, "enabled")
 }
 
-func (w *waiter) UntilIsNotEnabled() *element {
+func (w *Waiter) UntilIsNotEnabled() *Element {
 	return waitCondition(w, w.e.isEnabled, false, "not enabled")
 }
 
-func (w *waiter) UntilIsSelected() *element {
+func (w *Waiter) UntilIsSelected() *Element {
 	return waitCondition(w, w.e.isSelected, true, "selected")
 }
 
-func (w *waiter) UntilIsNotSelected() *element {
+func (w *Waiter) UntilIsNotSelected() *Element {
 	return waitCondition(w, w.e.isSelected, false, "not selected")
 }
 
 func waitCondition(
-	w *waiter,
+	w *Waiter,
 	condition func() (*response, error),
 	expected bool,
 	conditionName string,
-) *element {
+) *Element {
 	startTime := time.Now()
 	endTime := startTime.Add(w.timeout)
 
@@ -106,9 +106,9 @@ func waitCondition(
 }
 
 func waitPresent(
-	w *waiter,
+	w *Waiter,
 	bePresent bool,
-) *element {
+) *Element {
 	startTime := time.Now()
 	endTime := startTime.Add(w.timeout)
 

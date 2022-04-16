@@ -216,7 +216,7 @@ func saveBinary(
 
 func unarchive(archiveName, driverName string) error {
 	f, err := os.OpenFile(
-		driverName, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0755,
+		driverName, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644,
 	)
 	if err != nil {
 		return errors.Wrap(err, "failed to open browser driver target file")

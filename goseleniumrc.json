@@ -1,6 +1,7 @@
 {
   "logging": "debug",
   "soft_asserts": false,
+  "screenshot_path": "",
   "runner": {
     "parallel_runs": 1
   },

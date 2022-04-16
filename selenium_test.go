@@ -32,9 +32,11 @@ func Test(t *testing.T) {
 
 func AssertTest(s *selenium.Session) {
 	s.OpenURL("https://duckduckgo.com/")
+	s.TakeScreeshot("test.jpeg")
+
 	fmt.Println(
 		s.NewElement(
-			&selenium.Element{"#search_form_input_homepage", selector.CSS},
+			&selenium.E{"#search_form_input_homepage", selector.CSS},
 		).GetAttribute("id"),
 	)
 
@@ -48,6 +50,7 @@ func AssertTest(s *selenium.Session) {
 		s.NewElement("text_promo--text").GetAttribute("value"),
 	)
 }
+
 func IFrameTest(s *selenium.Session) {
 	s.OpenURL("https://jsfiddle.net/westonruter/6mSuK/")
 

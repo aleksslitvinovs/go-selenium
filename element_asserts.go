@@ -6,38 +6,38 @@ import (
 	"github.com/pkg/errors"
 )
 
-type asserter struct {
-	e *element
+type Asserter struct {
+	e *Element
 }
 
-type valuer struct {
+type Valuer struct {
 	actual string
-	e      *element
+	e      *Element
 }
 
-func (e *element) ShouldHave() *asserter {
-	return &asserter{
+func (e *Element) ShouldHave() *Asserter {
+	return &Asserter{
 		e: e,
 	}
 }
 
-func (a *asserter) Text() *valuer {
+func (a *Asserter) Text() *Valuer {
 	text := a.e.GetText()
 
-	return &valuer{
+	return &Valuer{
 		actual: text,
 		e:      a.e,
 	}
 }
 
-func (a *asserter) Attribute(attribute string) *valuer {
-	return &valuer{
+func (a *Asserter) Attribute(attribute string) *Valuer {
+	return &Valuer{
 		actual: a.e.GetAttribute(attribute),
 		e:      a.e,
 	}
 }
 
-func (t *valuer) EqualsTo(expected string) {
+func (t *Valuer) EqualsTo(expected string) {
 	if t.actual != expected {
 		handleError(
 			nil,
@@ -48,7 +48,7 @@ func (t *valuer) EqualsTo(expected string) {
 	}
 }
 
-func (t *valuer) NotEqualsTo(expected string) {
+func (t *Valuer) NotEqualsTo(expected string) {
 	if t.actual == expected {
 		handleError(
 			nil,
@@ -59,7 +59,7 @@ func (t *valuer) NotEqualsTo(expected string) {
 	}
 }
 
-func (t *valuer) StartsWith(expected string) {
+func (t *Valuer) StartsWith(expected string) {
 	if strings.HasPrefix(t.actual, expected) {
 		handleError(
 			nil,
@@ -70,7 +70,7 @@ func (t *valuer) StartsWith(expected string) {
 	}
 }
 
-func (t *valuer) EndsWith(expected string) {
+func (t *Valuer) EndsWith(expected string) {
 	if !strings.HasSuffix(t.actual, expected) {
 		handleError(
 			nil,
@@ -81,7 +81,7 @@ func (t *valuer) EndsWith(expected string) {
 	}
 }
 
-func (t *valuer) Contains(expected string) {
+func (t *Valuer) Contains(expected string) {
 	if !strings.Contains(t.actual, expected) {
 		handleError(
 			nil,
@@ -92,7 +92,7 @@ func (t *valuer) Contains(expected string) {
 	}
 }
 
-func (t *valuer) NotContains(expected string) {
+func (t *Valuer) NotContains(expected string) {
 	if strings.Contains(t.actual, expected) {
 		handleError(
 			nil,

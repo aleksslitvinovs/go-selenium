@@ -207,7 +207,7 @@ func (r *response) UnmarshalJSON(data []byte) error {
 	switch values := res.Value.(type) {
 	case map[string]interface{}:
 		for k, v := range values {
-			if strings.HasPrefix(k, "element") {
+			if strings.HasPrefix(strings.ToLower(k), "element") {
 				r.Value = map[string]string{k: v.(string)}
 
 				return nil

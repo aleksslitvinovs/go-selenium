@@ -8,7 +8,7 @@ import (
 	"github.com/theRealAlpaca/go-selenium/types"
 )
 
-func (e *element) GetText() string {
+func (e *Element) GetText() string {
 	e.setElementID()
 
 	res, err := e.api.executeRequest(
@@ -23,7 +23,7 @@ func (e *element) GetText() string {
 	return res.Value.(string)
 }
 
-func (e *element) GetAttribute(attribute string) string {
+func (e *Element) GetAttribute(attribute string) string {
 	e.setElementID()
 
 	res, err := e.api.executeRequestVoid(
@@ -40,7 +40,7 @@ func (e *element) GetAttribute(attribute string) string {
 	return res.Value.(string)
 }
 
-func (e *element) Click() *element {
+func (e *Element) Click() *Element {
 	e.setElementID()
 
 	res, err := e.api.executeRequest(
@@ -55,7 +55,7 @@ func (e *element) Click() *element {
 	return e
 }
 
-func (e *element) SendKeys(input string) *element {
+func (e *Element) SendKeys(input string) *Element {
 	e.setElementID()
 
 	payload := struct {
@@ -86,7 +86,7 @@ func (e *element) SendKeys(input string) *element {
 	return e
 }
 
-func (e *element) Clear() *element {
+func (e *Element) Clear() *Element {
 	e.setElementID()
 
 	res, err := e.api.executeRequest(
@@ -101,7 +101,7 @@ func (e *element) Clear() *element {
 	return e
 }
 
-func (e *element) IsPresent() bool {
+func (e *Element) IsPresent() bool {
 	_, err := e.findElement()
 	if err != nil {
 		handleError(nil, err)
@@ -110,25 +110,25 @@ func (e *element) IsPresent() bool {
 	return err == nil
 }
 
-func (e *element) IsVisible() bool {
+func (e *Element) IsVisible() bool {
 	return e.handleCondition(
 		func() (*response, error) { return e.isVisible() },
 	)
 }
 
-func (e *element) IsEnabled() bool {
+func (e *Element) IsEnabled() bool {
 	return e.handleCondition(
 		func() (*response, error) { return e.isEnabled() },
 	)
 }
 
-func (e *element) IsSelected() bool {
+func (e *Element) IsSelected() bool {
 	return e.handleCondition(
 		func() (*response, error) { return e.isSelected() },
 	)
 }
 
-func (e *element) isVisible() (*response, error) {
+func (e *Element) isVisible() (*response, error) {
 	e.setElementID()
 
 	return e.api.executeRequest(
@@ -140,7 +140,7 @@ func (e *element) isVisible() (*response, error) {
 	)
 }
 
-func (e *element) isEnabled() (*response, error) {
+func (e *Element) isEnabled() (*response, error) {
 	e.setElementID()
 
 	return e.api.executeRequest(
@@ -152,7 +152,7 @@ func (e *element) isEnabled() (*response, error) {
 	)
 }
 
-func (e *element) isSelected() (*response, error) {
+func (e *Element) isSelected() (*response, error) {
 	e.setElementID()
 
 	return e.api.executeRequest(
@@ -164,7 +164,7 @@ func (e *element) isSelected() (*response, error) {
 	)
 }
 
-func (e *element) handleCondition(
+func (e *Element) handleCondition(
 	condition func() (*response, error),
 ) bool {
 	res, err := condition()

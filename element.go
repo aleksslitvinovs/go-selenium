@@ -11,13 +11,12 @@ import (
 	"github.com/theRealAlpaca/go-selenium/types"
 )
 
-type Element struct {
+type E struct {
 	Selector     string `json:"value"`
 	SelectorType string `json:"using"`
 }
-
-type element struct {
-	Element
+type Element struct {
+	E
 
 	id       string
 	session  *Session
@@ -38,12 +37,12 @@ const (
 )
 
 // NewElement returns a new Element. The parameter can be either a selector (
-// uses session's default locator) or an *Element struct.
-func (s *Session) NewElement(e interface{}) *element {
+// uses session's default locator) or *E or E struct.
+func (s *Session) NewElement(e interface{}) *Element {
 	switch v := e.(type) {
 	case string:
-		return &element{
-			Element: Element{
+		return &Element{
+			E: E{
 				Selector:     v,
 				SelectorType: s.defaultLocator,
 			},
@@ -51,9 +50,16 @@ func (s *Session) NewElement(e interface{}) *element {
 			session:  s,
 			api:      s.api,
 		}
-	case *Element:
-		return &element{
-			Element:  *v,
+	case *E:
+		return &Element{
+			E:        *v,
+			settings: defaultSettings,
+			session:  s,
+			api:      s.api,
+		}
+	case E:
+		return &Element{
+			E:        v,
 			settings: defaultSettings,
 			session:  s,
 			api:      s.api,
@@ -63,7 +69,7 @@ func (s *Session) NewElement(e interface{}) *element {
 	}
 }
 
-func (e *element) setElementID() {
+func (e *Element) setElementID() {
 	if e.id != "" {
 		return
 	}
@@ -109,7 +115,7 @@ func (e *element) setElementID() {
 	)
 }
 
-func (e *element) findElement() (string, error) {
+func (e *Element) findElement() (string, error) {
 	res, err := e.api.executeRequest(
 		http.MethodPost,
 		fmt.Sprintf("/session/%s/element", e.session.GetID()),
