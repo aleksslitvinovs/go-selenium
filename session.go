@@ -16,15 +16,15 @@ type Session struct {
 	// TODO: Maybe create a custom struct for handling error types. Maybe just
 	// an alias to string? Maybe could implement Error interface?
 	errors []string
-	api    *APIClient
+	api    *apiClient
 }
 
 func NewSession() (*Session, error) {
-	if Client == nil {
+	if client == nil {
 		return nil, errors.New("client is not set")
 	}
 
-	err := Client.waitUntilIsReady(10 * time.Second)
+	err := client.waitUntilIsReady(10 * time.Second)
 	if err != nil {
 		return nil, errors.Wrap(
 			err, "driver is not ready to start a new session",
@@ -42,36 +42,40 @@ func NewSession() (*Session, error) {
 		} `json:"value"`
 	}
 
-	err = Client.api.ExecuteRequestCustom(
+	res, err := client.api.executeRequestCustom(
 		http.MethodPost, "/session", req, &response,
 	)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to start session")
+		handleError(res, err)
 	}
 
 	s := &Session{
 		id:             response.Value.SessionID,
-		defaultLocator: Config.ElementSettings.SelectorType,
-		api:            Client.api,
+		defaultLocator: config.ElementSettings.SelectorType,
+		api:            client.api,
 	}
 
-	Client.sessions[s] = true
+	client.ss.mu.Lock()
+	defer client.ss.mu.Unlock()
+
+	client.ss.sessions[s] = true
 
 	return s, nil
 }
 
 func (s *Session) DeleteSession() {
-	res, err := s.api.ExecuteRequestVoid(
+	res, err := s.api.executeRequestVoid(
 		http.MethodDelete,
 		fmt.Sprintf("/session/%s", s.id),
 	)
 	if err != nil {
-		if errRes := res.GetErrorReponse(); errRes != nil {
-			HandleResponseError(errRes)
-		}
-
-		HandleError(errors.Wrap(err, "failed to delete session"))
+		handleError(res, err)
 	}
+
+	client.ss.mu.Lock()
+	defer client.ss.mu.Unlock()
+
+	client.ss.sessions[s] = false
 }
 
 func (s *Session) GetID() string {
@@ -103,7 +107,7 @@ func (s *Session) RaiseErrors() string {
 }
 
 func getCapabilities() map[string]interface{} {
-	caps := Config.WebDriver.Capabalities
+	caps := config.WebDriver.Capabalities
 	if caps == nil {
 		caps = make(map[string]interface{})
 	}

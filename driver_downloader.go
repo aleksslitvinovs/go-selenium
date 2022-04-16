@@ -9,6 +9,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"path"
 	"runtime"
 	"strconv"
 	"strings"
@@ -29,12 +30,18 @@ var (
 	)
 	chromeDriverURL  = "https://chromedriver.storage.googleapis.com/%s/chromedriver_%s"                          //nolint:lll
 	firefoxDriverURL = "https://github.com/mozilla/geckodriver/releases/download/v0.30.0/geckodriver-v0.30.0-%s" //nolint:lll
+	defaultPath      = "./"
 )
 
 func downloadDriver(
 	wg *sync.WaitGroup, driverName string,
 ) error {
 	defer wg.Done()
+
+	// Default driver is found on the system.
+	if _, err := os.Stat(path.Join(defaultPath, driverName)); err == nil {
+		return nil
+	}
 
 	var platform string
 

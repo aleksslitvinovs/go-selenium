@@ -14,14 +14,18 @@ import (
 type Element struct {
 	Selector     string `json:"value"`
 	SelectorType string `json:"using"`
+}
+
+type element struct {
+	Element
 
 	id       string
 	session  *Session
-	settings *ElementSettings
-	api      *APIClient
+	settings *elementSettings
+	api      *apiClient
 }
 
-var defaultSettings = &ElementSettings{
+var defaultSettings = &elementSettings{
 	PollInterval: types.Time{Duration: 500 * time.Millisecond},
 	RetryTimeout: types.Time{Duration: 5 * time.Second},
 	SelectorType: selector.CSS,
@@ -33,42 +37,62 @@ const (
 	legacyElementID = "ELEMENT"
 )
 
-func (s *Session) NewElement(selector string) *Element {
-	return &Element{
-		Selector:     selector,
-		SelectorType: s.defaultLocator,
-		settings:     defaultSettings,
-		session:      s,
-		api:          s.api,
+// NewElement returns a new Element. The parameter can be either a selector (
+// uses session's default locator) or an *Element struct.
+func (s *Session) NewElement(e interface{}) *element {
+	switch v := e.(type) {
+	case string:
+		return &element{
+			Element: Element{
+				Selector:     v,
+				SelectorType: s.defaultLocator,
+			},
+			settings: defaultSettings,
+			session:  s,
+			api:      s.api,
+		}
+	case *Element:
+		return &element{
+			Element:  *v,
+			settings: defaultSettings,
+			session:  s,
+			api:      s.api,
+		}
+	default:
+		panic(errors.Errorf("unsupported element type: %T", v))
 	}
 }
 
-func (we *Element) setElementID() {
-	if we.id != "" {
+func (e *element) setElementID() {
+	if e.id != "" {
 		return
 	}
 
-	intialSettings := *we.settings
+	intialSettings := *e.settings
 
-	we.settings.IgnoreNotFound = true
+	e.settings.IgnoreNotFound = true
 
 	defer func() {
-		we.settings = &intialSettings
+		e.settings = &intialSettings
 	}()
 
-	timeout := time.Now().Add(we.settings.RetryTimeout.Duration)
+	timeout := time.Now().Add(e.settings.RetryTimeout.Duration)
 
 	var err error
 
 	for time.Now().Before(timeout) {
-		id, err := we.findElement()
-		if err != nil || id == "" {
-			time.Sleep(we.settings.PollInterval.Duration)
+		id, err := e.findElement()
+		if err != nil {
+			handleError(nil, err)
+		}
+
+		if id == "" {
+			time.Sleep(e.settings.PollInterval.Duration)
 
 			continue
 		}
 
-		we.id = id
+		e.id = id
 
 		return
 	}
@@ -77,21 +101,35 @@ func (we *Element) setElementID() {
 		logger.Debugf("An error occurred while finding element: %s", err)
 	}
 
-	HandleError(
+	handleError(
+		nil,
 		errors.Errorf(
-			"Element %q (%s) not found", we.Selector, we.SelectorType,
+			"Element %q (%s) not found", e.Selector, e.SelectorType,
 		),
 	)
 }
 
-func (we *Element) findElement() (string, error) {
-	res, err := we.api.ExecuteRequest(
+func (e *element) findElement() (string, error) {
+	res, err := e.api.executeRequest(
 		http.MethodPost,
-		fmt.Sprintf("/session/%s/element", we.session.GetID()),
-		we,
+		fmt.Sprintf("/session/%s/element", e.session.GetID()),
+		e,
 	)
 	if err != nil {
-		return "", errors.Wrap(err, "failed to find element")
+		errRes := res.getErrorReponse()
+		if errRes == nil {
+			return "", errors.Wrap(err, "failed to find element")
+		}
+
+		if errors.As(errRes, &types.ErrNoSuchElement) &&
+			e.settings.IgnoreNotFound {
+			return "", nil
+		}
+
+		ok := isAllowedError(errRes)
+		if !ok {
+			panic(errRes.String())
+		}
 	}
 
 	v, ok := res.Value.(map[string]string)
@@ -106,6 +144,22 @@ func (we *Element) findElement() (string, error) {
 	}
 
 	return id, nil
+}
+
+func isAllowedError(err error) bool {
+	if errors.As(err, &types.ErrStaleElementReference) {
+		return true
+	}
+
+	if errors.As(err, &types.ErrElementlickIntercepted) {
+		return true
+	}
+
+	if errors.As(err, &types.ErrElementNotInteractable) {
+		return true
+	}
+
+	return false
 }
 
 func getElementID(elements map[string]string) string {

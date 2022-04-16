@@ -53,7 +53,7 @@ func NewDriver(
 	}, nil
 }
 
-func (d *Driver) Start(conf *WebDriverConfig) error {
+func (d *Driver) Start(conf *webDriverConfig) error {
 	d.timeout = conf.Timeout
 
 	if d.webDriverPath == "" {
@@ -111,7 +111,7 @@ func (d *Driver) Stop() error {
 	return nil
 }
 
-func (d *Driver) IsReady(c *client) (bool, error) {
+func (d *Driver) IsReady(c *clientParams) (bool, error) {
 	var response struct {
 		Value struct {
 			Ready   bool   `json:"ready"`
@@ -119,11 +119,11 @@ func (d *Driver) IsReady(c *client) (bool, error) {
 		} `json:"value"`
 	}
 
-	err := c.api.ExecuteRequestCustom(
+	res, err := c.api.executeRequestCustom(
 		http.MethodGet, "/status", struct{}{}, &response,
 	)
 	if err != nil {
-		return false, errors.Wrap(err, "failed to get status")
+		handleError(res, err)
 	}
 
 	return response.Value.Ready, nil
@@ -139,7 +139,7 @@ func printLogs(ready chan<- bool, d *Driver, output io.ReadCloser) {
 
 		// TODO: Improve error handling
 		if strings.Contains(line, "Address already in use") {
-			logger.Fatalf(
+			logger.Errorf(
 				"Cannot start browser driver. Port %d is already in use.",
 				d.port,
 			)

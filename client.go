@@ -11,29 +11,42 @@ import (
 	"github.com/theRealAlpaca/go-selenium/logger"
 )
 
-type client struct {
-	api      *APIClient
-	driver   *Driver
+type sessionStore struct {
 	sessions map[*Session]bool
+	mu       sync.Mutex
+}
+type clientParams struct {
+	api    *apiClient
+	driver *Driver
+	ss     *sessionStore
 }
 
 type Opts struct {
 	ConfigPath string
 }
 
-var Client *client
+var client *clientParams
 
 // NewClient creates a new client instance with the provided driver. Based on
 // the configuration settings, a driver may be started. Optionally, Opts can be
 // provided for additional configuration.
-func StartClient(d *Driver, opts *Opts) (*client, error) {
-	if Client != nil {
-		return Client, nil
+func SetClient(d *Driver, opts *Opts) error {
+	if client != nil {
+		return nil
 	}
 
 	if opts == nil {
 		opts = &Opts{}
 	}
+
+	go gracefulShutdown()
+
+	err := readConfig(opts.ConfigPath)
+	if err != nil {
+		return errors.Wrap(err, "failed to read config")
+	}
+
+	logger.SetLogLevel(config.LogLevel)
 
 	wg := &sync.WaitGroup{}
 
@@ -42,42 +55,33 @@ func StartClient(d *Driver, opts *Opts) (*client, error) {
 
 		err := downloadDriver(wg, chromedriver)
 		if err != nil {
-			return nil, errors.Wrap(err, "failed to download chromedriver")
+			return errors.Wrap(err, "failed to download chromedriver")
 		}
 
 		d, err = NewDriver(chromedriver, "http://localhost:4445")
 		if err != nil {
-			return nil, errors.Wrap(
+			return errors.Wrap(
 				err, "failed to create browser default driver",
 			)
 		}
 	}
 
-	go gracefulShutdown()
-
-	err := ReadConfig(opts.ConfigPath)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to read config")
-	}
-
-	logger.SetLogLevel(Config.LogLevel)
-
 	wg.Wait()
 
-	if !Config.WebDriver.ManualStart {
-		err := d.Start(Config.WebDriver)
+	if !config.WebDriver.ManualStart {
+		err := d.Start(config.WebDriver)
 		if err != nil {
-			return nil, errors.Wrap(err, "failed to launch driver")
+			return errors.Wrap(err, "failed to launch driver")
 		}
 	}
 
-	Client = &client{
-		api:      &APIClient{BaseURL: d.remoteURL},
-		driver:   d,
-		sessions: make(map[*Session]bool),
+	client = &clientParams{
+		api:    &apiClient{baseURL: d.remoteURL},
+		driver: d,
+		ss:     &sessionStore{sessions: make(map[*Session]bool)},
 	}
 
-	return Client, nil
+	return nil
 }
 
 func gracefulShutdown() {
@@ -91,7 +95,7 @@ func gracefulShutdown() {
 }
 
 func MustStopClient() {
-	if Client == nil {
+	if client == nil {
 		return
 	}
 
@@ -106,23 +110,26 @@ func StopClient() error {
 
 	// Driver must be stopped even if session cannot be deleted.
 	defer func() {
-		if Client.driver == nil {
+		if client.driver == nil {
 			return
 		}
 
-		err := Client.driver.Stop()
+		err := client.driver.Stop()
 		if err != nil {
 			tempErr = errors.Wrap(err, "failed to stop driver process")
 		}
 	}()
 
-	for s, v := range Client.sessions {
+	client.ss.mu.Lock()
+	defer client.ss.mu.Unlock()
+
+	for s, v := range client.ss.sessions {
 		if v {
 			// TODO: Handle already deleted session
 			s.DeleteSession()
 		}
 
-		if Config.RaiseErrorsAutomatically {
+		if config.RaiseErrorsAutomatically {
 			e := s.RaiseErrors()
 
 			if e != "" {
@@ -130,14 +137,17 @@ func StopClient() error {
 			}
 		}
 
-		delete(Client.sessions, s)
+		delete(client.ss.sessions, s)
 	}
 
 	return tempErr
 }
 
-func (c *client) RaiseErrors() {
-	for s := range c.sessions {
+func (c *clientParams) RaiseErrors() {
+	c.ss.mu.Lock()
+	defer c.ss.mu.Unlock()
+
+	for s := range c.ss.sessions {
 		errors := s.RaiseErrors()
 
 		if len(errors) == 0 {
@@ -150,7 +160,7 @@ func (c *client) RaiseErrors() {
 	}
 }
 
-func (c *client) waitUntilIsReady(timeout time.Duration) error {
+func (c *clientParams) waitUntilIsReady(timeout time.Duration) error {
 	endTime := time.Now().Add(timeout)
 
 	for endTime.After(time.Now()) {

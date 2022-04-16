@@ -1,39 +1,31 @@
 package selenium
 
 import (
-	"github.com/pkg/errors"
 	"github.com/theRealAlpaca/go-selenium/logger"
-	"github.com/theRealAlpaca/go-selenium/types"
 )
 
-func HandleError(err error) {
-	if err == nil {
-		return
-	}
-
-	logger.Error(err)
-
-	if !errors.As(err, &types.ErrFailedRequest) {
-		panic(err)
-	}
-
-	if Config.SoftAsserts {
-		return
-	}
-
-	panic(err)
-}
-
-func HandleResponseError(res *ErrorResponse) {
+func handleError(res *response, err error) {
 	if res == nil {
-		return
+		logger.Error(err.Error())
+
+		if config.SoftAsserts {
+			return
+		}
+
+		panic(err.Error())
 	}
 
-	logger.Error(res.String())
+	errRes := res.getErrorReponse()
+	if errRes != nil {
+		logger.Error(errRes)
 
-	if Config.SoftAsserts {
-		return
+		if config.SoftAsserts {
+			return
+		}
+
+		// TODO: Handle error response (element not visible, etc.)
+		panic(errRes.Error())
 	}
 
-	panic(res.String())
+	panic(err.Error())
 }

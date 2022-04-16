@@ -6,6 +6,7 @@ import (
 	"runtime/debug"
 	"sync"
 
+	"github.com/fatih/color"
 	"github.com/theRealAlpaca/go-selenium/logger"
 )
 
@@ -13,10 +14,14 @@ import (
 // selenium.Run() to execute tests.
 type TestFunction func(s *Session)
 
+type test struct {
+	name     string
+	fn       TestFunction
+	hadError bool
+}
+
 type runner struct {
-	tests       map[string]TestFunction
-	testCounter int
-	hadErrors   bool
+	tests []*test
 
 	beforeAll  func()
 	beforeEach func()
@@ -24,33 +29,47 @@ type runner struct {
 	afterAll   func()
 }
 
-var r = &runner{tests: make(map[string]TestFunction)}
+var r = &runner{}
 
 func Run() {
 	defer func() {
 		MustStopClient()
 
-		if r.hadErrors {
+		var errorCount int
+
+		for _, t := range r.tests {
+			if t.hadError {
+				errorCount++
+			}
+		}
+
+		if errorCount > 0 {
+			logger.Custom(color.RedString(
+				"Failed! Success rate: %d/%d",
+				len(r.tests)-errorCount, len(r.tests),
+			))
+
 			os.Exit(1)
 		}
+
+		logger.Custom(color.GreenString(
+			"Passed! Success rate: %d/%d",
+			len(r.tests)-errorCount, len(r.tests)),
+		)
 	}()
 
-	if Client == nil || Config == nil {
-		logger.Error("Client is not set")
-
-		r.hadErrors = true
-
-		return
+	if client == nil || config == nil {
+		panic("Client is not set")
 	}
 
 	runBeforeAll()
 
-	pr := Config.Runner.ParallelRuns
+	pr := config.Runner.ParallelRuns
 	if pr < 1 {
 		pr = 1
 	}
 
-	jobs := make(chan TestFunction, pr)
+	jobs := make(chan *test, pr)
 	defer close(jobs)
 
 	wg := &sync.WaitGroup{}
@@ -59,12 +78,12 @@ func Run() {
 		go worker(jobs, wg)
 	}
 
-	for n, t := range r.tests {
+	for _, t := range r.tests {
 		wg.Add(1)
 
 		runBeforeEach()
 
-		logger.Infof("running test: %s", n)
+		logger.Infof("running test: %s", t.name)
 		jobs <- t
 
 		runAfterEach()
@@ -75,20 +94,27 @@ func Run() {
 	runAfterAll()
 }
 
-func worker(tf <-chan TestFunction, wg *sync.WaitGroup) {
-	for t := range tf {
+func worker(tc <-chan *test, wg *sync.WaitGroup) {
+	for t := range tc {
 		runTest(t, wg)
 	}
 }
 
-func runTest(fn TestFunction, wg *sync.WaitGroup) {
-	var s *Session
-
+func runTest(t *test, wg *sync.WaitGroup) {
 	defer wg.Done()
 
-	defer func() {
-		s.DeleteSession()
+	s, err := NewSession()
+	if err != nil {
+		panic(err)
+	}
 
+	client.ss.mu.Lock()
+	client.ss.sessions[s] = true
+	client.ss.mu.Unlock()
+
+	defer s.DeleteSession()
+
+	defer func() {
 		err := recover()
 		if err == nil {
 			return
@@ -96,7 +122,7 @@ func runTest(fn TestFunction, wg *sync.WaitGroup) {
 
 		debug.PrintStack()
 
-		r.hadErrors = true
+		t.hadError = true
 
 		switch v := err.(type) {
 		case error:
@@ -108,14 +134,7 @@ func runTest(fn TestFunction, wg *sync.WaitGroup) {
 		}
 	}()
 
-	s, err := NewSession()
-	if err != nil {
-		panic(err)
-	}
-
-	Client.sessions[s] = true
-
-	fn(s)
+	t.fn(s)
 }
 
 func runBeforeAll() {
@@ -159,23 +178,30 @@ func SetAfterAll(f func()) {
 }
 
 func SetTest(fn TestFunction, name ...string) {
-	defer func() {
-		r.testCounter++
-	}()
-
 	if len(name) == 0 {
-		r.tests[fmt.Sprintf("test_%d", r.testCounter)] = fn
+		r.tests = append(r.tests, &test{
+			name: fmt.Sprintf("test_%d", len(r.tests)),
+			fn:   fn,
+		})
 
 		return
 	}
 
-	if r.tests[name[0]] != nil {
-		r.tests[fmt.Sprintf("%s_%d", name[0], r.testCounter)] = fn
+	for _, t := range r.tests {
+		if t.name == name[0] {
+			r.tests = append(r.tests, &test{
+				name: fmt.Sprintf("%s_%d", name[0], len(r.tests)),
+				fn:   fn,
+			})
 
-		return
+			return
+		}
 	}
 
-	r.tests[name[0]] = fn
+	r.tests = append(r.tests, &test{
+		name: name[0],
+		fn:   fn,
+	})
 }
 
 func SetTests(fns map[string]TestFunction) {

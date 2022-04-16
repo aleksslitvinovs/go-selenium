@@ -1,10 +1,12 @@
 package selenium_test
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
 	"github.com/theRealAlpaca/go-selenium"
+	"github.com/theRealAlpaca/go-selenium/selector"
 )
 
 func Test(t *testing.T) {
@@ -15,15 +17,68 @@ func Test(t *testing.T) {
 	// if err != nil {
 	// 	panic(err)
 	// }
-	_, err := selenium.StartClient(nil, nil)
+	err := selenium.SetClient(nil, nil)
 	if err != nil {
 		panic(err)
 	}
 
-	selenium.SetTest(JitsiTest)
+	selenium.SetTest(AssertTest)
+	// selenium.SetTest(IFrameTest)
+	// selenium.SetTest(JitsiTest)
 	// selenium.SetTest(MyTest)
 
 	selenium.Run()
+}
+
+func AssertTest(s *selenium.Session) {
+	s.OpenURL("https://duckduckgo.com/")
+	fmt.Println(
+		s.NewElement(
+			&selenium.Element{"#search_form_input_homepage", selector.CSS},
+		).GetAttribute("id"),
+	)
+
+	s.NewElement("#search_form_input_homepage").
+		ShouldHave().Attribute("id").
+		EqualsTo("search_form_input_homepage")
+	// s.NewElement(".text_promo--text").ShouldHave().Text().EndsWith("Beta")
+	fmt.Println(s.NewElement("text_promo--text").GetText())
+	fmt.Println(
+		"testing value",
+		s.NewElement("text_promo--text").GetAttribute("value"),
+	)
+}
+func IFrameTest(s *selenium.Session) {
+	s.OpenURL("https://jsfiddle.net/westonruter/6mSuK/")
+
+	t := s.NewElement(".iframeCont")
+	t.WaitFor(10 * time.Second).UntilIsVisible()
+
+	s.SwitchToFrame(s.NewElement(`[name="result"]`)).
+		SwitchToFrame((s.NewElement("iframe")))
+
+	fmt.Println(
+		"Result",
+		s.NewElement("#ca-nstab-project").
+			WaitFor(10*time.Second).UntilIsVisible().
+			GetText(),
+	)
+	s.SwitchToParentFrame()
+
+	fmt.Println(
+		"Result 2",
+		s.NewElement("body").
+			WaitFor(10*time.Second).UntilIsVisible().
+			GetText(),
+	)
+
+	s.SwitchToFrame(nil)
+	fmt.Println(
+		"Result 3",
+		s.NewElement(".profileDetails .company").
+			WaitFor(10*time.Second).UntilIsVisible().
+			GetText(),
+	)
 }
 
 func JitsiTest(s *selenium.Session) {

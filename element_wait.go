@@ -8,118 +8,117 @@ import (
 )
 
 type waiter struct {
-	we      *Element
+	e       *element
 	timeout time.Duration
 }
 
-var (
-	ErrWebIDNotSet = errors.New("WebID not set")
-)
-
-func (we *Element) WaitFor(timeout time.Duration) *waiter {
+func (e *element) WaitFor(timeout time.Duration) *waiter {
 	return &waiter{
-		we:      we,
+		e:       e,
 		timeout: timeout,
 	}
 }
 
-func (w *waiter) UntilIsPresent() *Element {
+func (w *waiter) UntilIsPresent() *element {
 	return waitPresent(w, true)
 }
-func (w *waiter) UntilIsNotPresent() *Element {
+func (w *waiter) UntilIsNotPresent() *element {
 	return waitPresent(w, false)
 }
 
-func (w *waiter) UntilIsVisible() *Element {
-	return waitCondition(w, w.we.isVisible, true, "visible")
+func (w *waiter) UntilIsVisible() *element {
+	return waitCondition(w, w.e.isVisible, true, "visible")
 }
-func (w *waiter) UntilIsNotVisible() *Element {
-	return waitCondition(w, w.we.isVisible, false, "not visible")
-}
-
-func (w *waiter) UntilIsEnabled() *Element {
-	return waitCondition(w, w.we.isEnabled, true, "enabled")
+func (w *waiter) UntilIsNotVisible() *element {
+	return waitCondition(w, w.e.isVisible, false, "not visible")
 }
 
-func (w *waiter) UntilIsNotEnabled() *Element {
-	return waitCondition(w, w.we.isEnabled, false, "not enabled")
+func (w *waiter) UntilIsEnabled() *element {
+	return waitCondition(w, w.e.isEnabled, true, "enabled")
 }
 
-func (w *waiter) UntilIsSelected() *Element {
-	return waitCondition(w, w.we.isSelected, true, "selected")
+func (w *waiter) UntilIsNotEnabled() *element {
+	return waitCondition(w, w.e.isEnabled, false, "not enabled")
 }
 
-func (w *waiter) UntilIsNotSelected() *Element {
-	return waitCondition(w, w.we.isSelected, false, "not selected")
+func (w *waiter) UntilIsSelected() *element {
+	return waitCondition(w, w.e.isSelected, true, "selected")
+}
+
+func (w *waiter) UntilIsNotSelected() *element {
+	return waitCondition(w, w.e.isSelected, false, "not selected")
 }
 
 func waitCondition(
 	w *waiter,
-	condition func() (*Response, error),
+	condition func() (*response, error),
 	expected bool,
 	conditionName string,
-) *Element {
+) *element {
 	startTime := time.Now()
 	endTime := startTime.Add(w.timeout)
 
-	intialSettings := *w.we.settings
+	intialSettings := *w.e.settings
 
-	w.we.settings.IgnoreNotFound = true
+	w.e.settings.IgnoreNotFound = true
 
 	defer func() {
-		w.we.settings = &intialSettings
+		w.e.settings = &intialSettings
 	}()
 
 	for {
 		if endTime.Before(time.Now()) {
-			HandleError(
+			handleError(
+				nil,
 				errors.Errorf(
 					"Element %q is not %s after %s (time elapsed %dms)",
-					w.we.Selector,
+					w.e.Selector,
 					conditionName,
 					w.timeout,
 					time.Since(startTime).Milliseconds(),
 				),
 			)
 
-			return w.we
+			return w.e
 		}
 
 		res, err := condition()
 		if err != nil {
-			if errors.As(err, &ErrWebIDNotSet) {
-				time.Sleep(w.we.settings.PollInterval.Duration)
+			handleError(res, err)
 
-				continue
-			}
-
-			HandleError(errors.Wrap(err, "could not get condition"))
-
-			return w.we
+			return w.e
 		}
 
 		if res.Value.(bool) == expected {
 			logger.Infof(
 				"Element %q is %s after %s (time elapsed %dms)",
-				w.we.Selector,
+				w.e.Selector,
 				conditionName,
 				w.timeout,
 				time.Since(startTime).Milliseconds(),
 			)
 
-			return w.we
+			return w.e
 		}
 
-		time.Sleep(w.we.settings.PollInterval.Duration)
+		time.Sleep(w.e.settings.PollInterval.Duration)
 	}
 }
 
 func waitPresent(
 	w *waiter,
 	bePresent bool,
-) *Element {
+) *element {
 	startTime := time.Now()
 	endTime := startTime.Add(w.timeout)
+
+	intialSettings := *w.e.settings
+
+	w.e.settings.IgnoreNotFound = true
+
+	defer func() {
+		w.e.settings = &intialSettings
+	}()
 
 	conditionName := "present"
 	if !bePresent {
@@ -128,34 +127,31 @@ func waitPresent(
 
 	for {
 		if endTime.Before(time.Now()) {
-			HandleError(
+			handleError(
+				nil,
 				errors.Errorf(
 					"Element %q is not %s after %s (time elapsed %s)",
-					w.we.Selector,
+					w.e.Selector,
 					conditionName,
 					w.timeout,
 					time.Since(startTime),
 				),
 			)
 
-			return w.we
+			return w.e
 		}
 
-		id, err := w.we.findElement()
+		id, err := w.e.findElement()
 		if err != nil {
-			time.Sleep(w.we.settings.PollInterval.Duration)
+			handleError(nil, err)
 
-			continue
+			return w.e
 		}
 
-		if id != "" && bePresent {
-			return w.we
+		if id != "" && bePresent || id == "" && !bePresent {
+			return w.e
 		}
 
-		if id == "" && !bePresent {
-			return w.we
-		}
-
-		time.Sleep(w.we.settings.PollInterval.Duration)
+		time.Sleep(w.e.settings.PollInterval.Duration)
 	}
 }

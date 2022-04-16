@@ -2,7 +2,7 @@
   "logging": "debug",
   "soft_asserts": false,
   "runner": {
-    "parallel_runs": 2
+    "parallel_runs": 1
   },
   "raise_errors_automatically": true,
   "element_settings": {
@@ -13,39 +13,9 @@
   },
   "webdriver": {
     "manual_start": false,
-    "path": "/Users/aleksslitvinovs/Downloads/chromedriver",
-    "url": "http://localhost",
+    "path": "chromedriver",
+    "url": "http://localhost:4444",
     "timeout": "10s",
-    "capabilities": {
-      "browserName": "chrome",
-      "goog:chromeOptions": {
-        "args": [
-          "--no-sandbox",
-          "--use-fake-device-for-media-stream"
-        ],
-        "prefs": {
-          "profile": {
-            "content_settings": {
-              "exceptions": {
-                "media_stream_camera": {
-                  "https://*,*": {
-                    "setting": 1
-                  }
-                },
-                "media_stream_mic": {
-                  "https://*,*": {
-                    "setting": 1
-                  }
-                }
-              }
-            },
-            "default_content_setting_values": {
-              "automatic_downloads": 1,
-              "notifications": 1
-            }
-          }
-        }
-      }
-    }
+    "capabilities": null
   }
 }
