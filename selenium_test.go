@@ -6,10 +6,31 @@ import (
 	"time"
 
 	"github.com/theRealAlpaca/go-selenium"
-	"github.com/theRealAlpaca/go-selenium/selector"
+	"github.com/theRealAlpaca/go-selenium/key"
 )
 
 func Test(t *testing.T) {
+	selenium.SetTest(AssertTest)
+
+	selenium.Run()
+}
+
+func MyTest(s *selenium.Session) {
+	s.OpenURL("https://duckduckgo.com/")
+
+	s.NewElement("#search_form_input_homepage").
+		WaitFor(10 * time.Second).UntilIsVisible().
+		SendKeys("WebDriver").
+		SendKeys(key.Enter)
+
+	result := s.NewElement("#r1-0 .result__a").
+		WaitFor(10 * time.Second).UntilIsVisible().
+		GetText()
+
+	fmt.Printf("DuckDuckGo result: %s\n", result)
+}
+
+func Test2(t *testing.T) {
 	// d, err := selenium.NewDriver(
 	// 	"/Users/aleksslitvinovs/Downloads/chromedriver",
 	// 	"http://localhost:4444",
@@ -17,38 +38,35 @@ func Test(t *testing.T) {
 	// if err != nil {
 	// 	panic(err)
 	// }
-	err := selenium.SetClient(nil, nil)
-	if err != nil {
-		panic(err)
-	}
 
-	selenium.SetTest(AssertTest)
+	// selenium.SetTest(AssertTest)
 	// selenium.SetTest(IFrameTest)
 	// selenium.SetTest(JitsiTest)
-	// selenium.SetTest(MyTest)
-
-	selenium.Run()
+	// selenium.SetTest(Testy)
 }
 
 func AssertTest(s *selenium.Session) {
 	s.OpenURL("https://duckduckgo.com/")
-	s.TakeScreeshot("test.jpeg")
-
-	fmt.Println(
-		s.NewElement(
-			&selenium.E{"#search_form_input_homepage", selector.CSS},
-		).GetAttribute("id"),
-	)
 
 	s.NewElement("#search_form_input_homepage").
-		ShouldHave().Attribute("id").
-		EqualsTo("search_form_input_homepage")
-	// s.NewElement(".text_promo--text").ShouldHave().Text().EndsWith("Beta")
-	fmt.Println(s.NewElement("text_promo--text").GetText())
-	fmt.Println(
-		"testing value",
-		s.NewElement("text_promo--text").GetAttribute("value"),
-	)
+		WaitFor(10 * time.Second).UntilIsVisible().
+		SendKeys("WebDriver").
+		SendKeys(key.Enter)
+
+	e := s.NewElement("#search_form_input").
+		WaitFor(10 * time.Second).UntilIsVisible()
+
+	e.ShouldHave().Attribute("value").EqualTo("WebDriver")
+	e.ShouldHave().Attribute("value").Not().EqualTo("WebDriver_fail")
+
+	e.ShouldHave().Attribute("value").EqualTo("WebDriver_fail")
+	e.ShouldHave().Attribute("value").Not().EqualTo("WebDriver")
+
+	result := s.NewElement("#r1-0 .result__a").
+		WaitFor(10 * time.Second).UntilIsVisible().
+		GetText()
+
+	fmt.Printf("DuckDuckGo result: %s\n", result)
 }
 
 func IFrameTest(s *selenium.Session) {
@@ -94,7 +112,7 @@ func JitsiTest(s *selenium.Session) {
 	time.Sleep(10 * time.Second)
 }
 
-func MyTest(s *selenium.Session) {
+func Testy(s *selenium.Session) {
 	s.OpenURL("https://app.stage.loadero.com/login")
 	// s.NewWindow()
 

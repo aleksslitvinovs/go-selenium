@@ -10,15 +10,18 @@ import (
 	"github.com/theRealAlpaca/go-selenium/selector"
 )
 
+// Session represents a single user agent. It describes connection between
+// browser driver and the client.
 type Session struct {
-	id             string
-	defaultLocator string
+	id              string
+	locatorStrategy string
 	// TODO: Maybe create a custom struct for handling error types. Maybe just
 	// an alias to string? Maybe could implement Error interface?
 	errors []string
 	api    *apiClient
 }
 
+// NewSession creates a new session with the capabilities described in config.
 func NewSession() (*Session, error) {
 	if client == nil {
 		return nil, errors.New("client is not set")
@@ -35,6 +38,7 @@ func NewSession() (*Session, error) {
 		Capabilities map[string]interface{} `json:"capabilities"`
 	}{getCapabilities()}
 
+	//nolint:tagliatelle
 	var response struct {
 		Value struct {
 			SessionID    string                 `json:"sessionId"`
@@ -50,9 +54,9 @@ func NewSession() (*Session, error) {
 	}
 
 	s := &Session{
-		id:             response.Value.SessionID,
-		defaultLocator: config.ElementSettings.SelectorType,
-		api:            client.api,
+		id:              response.Value.SessionID,
+		locatorStrategy: config.Element.SelectorType,
+		api:             client.api,
 	}
 
 	client.ss.mu.Lock()
@@ -63,6 +67,7 @@ func NewSession() (*Session, error) {
 	return s, nil
 }
 
+// DeleteSession deletes the given session.
 func (s *Session) DeleteSession() {
 	res, err := s.api.executeRequestVoid(
 		http.MethodDelete,
@@ -78,22 +83,29 @@ func (s *Session) DeleteSession() {
 	client.ss.sessions[s] = false
 }
 
+// GetID returns the session's ID.
 func (s *Session) GetID() string {
 	return s.id
 }
 
+// AddError adds an error to the session's error list.
 func (s *Session) AddError(err string) {
 	s.errors = append(s.errors, err)
 }
 
+// UseCSS sets session's locator strategy to CSS. All future NewElement calls
+// will use CSS as the default locator strategy.
 func (s *Session) UseCSS() {
-	s.defaultLocator = selector.CSS
+	s.locatorStrategy = selector.CSS
 }
 
+// UseXPath sets session's locator strategy to XPath. All future NewElement
+// calls will use XPath as the default locator strategy.
 func (s *Session) UseXPath() {
-	s.defaultLocator = selector.XPath
+	s.locatorStrategy = selector.XPath
 }
 
+// RaiseErrors raises all the session's errors.
 func (s *Session) RaiseErrors() string {
 	if len(s.errors) == 0 {
 		return ""

@@ -16,19 +16,19 @@ import (
 	"github.com/theRealAlpaca/go-selenium/types"
 )
 
-// TODO: Create interface for Driver
 // Driver resembles a browser Driver and parameters to connect to it.
 type Driver struct {
 	webDriverPath string
-	port          int
 	remoteURL     string
-	timeout       types.Time
+	port          int
+	timeout       *types.Time
 	cmd           *exec.Cmd
 }
 
-func NewDriver(
-	webdriverPath string, remoteURL string,
-) (*Driver, error) {
+// NewDriver creates a new Driver with the supplied path to the browser driver
+// executable and remote URL to use. If remoteURL is empty, ErrInvalidParameters
+// error is returned.
+func NewDriver(webdriverPath string, remoteURL string) (*Driver, error) {
 	if remoteURL == "" {
 		return nil, errors.Wrap(
 			types.ErrInvalidParameters,
@@ -53,8 +53,10 @@ func NewDriver(
 	}, nil
 }
 
-func (d *Driver) Start(conf *webDriverConfig) error {
-	d.timeout = conf.Timeout
+// Start starts the browser driver. Driver must be started within the provided
+// timeout.
+func (d *Driver) Start(timeout *types.Time) error {
+	d.timeout = timeout
 
 	if d.webDriverPath == "" {
 		return errors.Wrap(
@@ -98,7 +100,7 @@ func (d *Driver) Start(conf *webDriverConfig) error {
 	}
 }
 
-func (d *Driver) Stop() error {
+func (d *Driver) stop() error {
 	if d.cmd == nil {
 		return nil
 	}
@@ -111,6 +113,9 @@ func (d *Driver) Stop() error {
 	return nil
 }
 
+// IsReady returns true if the browser driver is ready to create new sessions.
+// An error is returned if there was an issue retrieving driver's status.
+// TODO: make public and private methods.
 func (d *Driver) IsReady(c *clientParams) (bool, error) {
 	var response struct {
 		Value struct {
@@ -119,11 +124,11 @@ func (d *Driver) IsReady(c *clientParams) (bool, error) {
 		} `json:"value"`
 	}
 
-	res, err := c.api.executeRequestCustom(
+	_, err := c.api.executeRequestCustom(
 		http.MethodGet, "/status", struct{}{}, &response,
 	)
 	if err != nil {
-		handleError(res, err)
+		return false, errors.Wrap(err, "could not get driver status")
 	}
 
 	return response.Value.Ready, nil
@@ -144,7 +149,7 @@ func printLogs(ready chan<- bool, d *Driver, output io.ReadCloser) {
 				d.port,
 			)
 
-			d.Stop() //nolint:errcheck
+			d.stop() //nolint:errcheck
 		}
 
 		// Chromedriver is ready

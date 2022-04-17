@@ -16,6 +16,7 @@ import (
 
 type handleType string
 
+// Handle represents a browser window or tab.
 type Handle struct {
 	ID   string `json:"handle"`
 	Type string `json:"type"`
@@ -53,7 +54,17 @@ func (s *Session) GetCurrentURL() string {
 		return ""
 	}
 
-	return res.Value.(string)
+	if res.Value == nil {
+		handleError(nil, errors.New("failed to get current URL"))
+
+		return ""
+	}
+
+	if v, ok := res.Value.(string); ok {
+		return v
+	}
+
+	return ""
 }
 
 // Refresh refreshes the current page.
@@ -101,9 +112,18 @@ func (s *Session) GetTitle() string {
 		handleError(res, err)
 	}
 
-	return res.Value.(string)
+	if res.Value == nil {
+		handleError(nil, errors.New("failed to get page title"))
+	}
+
+	if v, ok := res.Value.(string); ok {
+		return v
+	}
+
+	return ""
 }
 
+// GetWindowHandle returns the current browsing context handle.
 func (s *Session) GetWindowHandle() string {
 	res, err := s.api.executeRequestVoid(
 		http.MethodGet, fmt.Sprintf("/session/%s/window", s.id),
@@ -112,9 +132,20 @@ func (s *Session) GetWindowHandle() string {
 		handleError(res, err)
 	}
 
-	return res.Value.(string)
+	if res.Value == nil {
+		handleError(nil, errors.New("failed to get window handle"))
+
+		return ""
+	}
+
+	if v, ok := res.Value.(string); ok {
+		return v
+	}
+
+	return ""
 }
 
+// GetWindowHandles returns all open browsing contexts' handles.
 func (s *Session) GetWindowHandles() []string {
 	res, err := s.api.executeRequestVoid(
 		http.MethodGet, fmt.Sprintf("/session/%s/window/handles", s.id),
@@ -123,17 +154,35 @@ func (s *Session) GetWindowHandles() []string {
 		handleError(res, err)
 	}
 
-	result := res.Value.([]interface{})
-	handles := make([]string, 0, len(result))
+	if res.Value == nil {
+		handleError(nil, errors.New("failed to get window handles"))
 
-	for _, v := range result {
-		handles = append(handles, v.(string))
+		return []string{}
+	}
+
+	values, ok := res.Value.([]interface{})
+	if !ok {
+		return []string{}
+	}
+
+	handles := make([]string, 0, len(values))
+
+	for _, v := range values {
+		if v == nil {
+			continue
+		}
+
+		if vs, ok := v.(string); ok {
+			handles = append(handles, vs)
+		}
 	}
 
 	return handles
 }
 
-// If there are no open browsing contexts left, the session is closed.
+// CloseWindow closes the current browsing context. If there are no open handles
+// for this browsing context, the session will be closed.
+// Reference: https://www.w3.org/TR/webdriver/#close-window
 func (s *Session) CloseWindow() *Session {
 	res, err := s.api.executeRequestVoid(
 		http.MethodDelete, fmt.Sprintf("/session/%s/window", s.id),
@@ -147,6 +196,7 @@ func (s *Session) CloseWindow() *Session {
 	return s
 }
 
+// SwitchHandle switches to the handle using the provided handle ID.
 func (s *Session) SwitchHandle(handle string) {
 	payload := struct {
 		Handle string `json:"handle"`
@@ -160,12 +210,12 @@ func (s *Session) SwitchHandle(handle string) {
 	}
 }
 
-// Opens a new browser tab.
+// NewTab opens a new browser tab.
 func (s *Session) NewTab() *Handle {
 	return s.newWindowWithType(tab)
 }
 
-// Opens a new browser tab.
+// NewWindow opens a new browser window.
 func (s *Session) NewWindow() *Handle {
 	return s.newWindowWithType(window)
 }
@@ -243,7 +293,7 @@ func (s *Session) SwitchToParentFrame() *Session {
 // TakeScreenshot takes a screenshot of the current browsing context. Screenshot
 // file is created in screenshot_path directory based on the config. The file
 // can have .png, .jpg or .jpeg extension.
-func (s *Session) TakeScreeshot(name string) *Session {
+func (s *Session) TakeScreenshot(name string) *Session {
 	if !strings.HasSuffix(name, ".png") &&
 		!strings.HasSuffix(name, ".jpg") &&
 		!strings.HasSuffix(name, ".jpeg") {
@@ -264,9 +314,17 @@ func (s *Session) TakeScreeshot(name string) *Session {
 		return s
 	}
 
-	err = createScreenshotFile(name, res.Value.(string))
-	if err != nil {
-		handleError(nil, err)
+	if res.Value == nil {
+		handleError(nil, errors.New("failed to take screenshot"))
+
+		return s
+	}
+
+	if v, ok := res.Value.(string); ok {
+		err = createScreenshotFile(name, v)
+		if err != nil {
+			handleError(nil, err)
+		}
 	}
 
 	return s
@@ -286,7 +344,7 @@ func createScreenshotFile(name, rawData string) error {
 	}
 
 	f, err := os.OpenFile(
-		path.Join(config.ScreenshotPath, name), os.O_WRONLY|os.O_CREATE, 0644,
+		path.Join(config.ScreenshotDir, name), os.O_WRONLY|os.O_CREATE, 0644,
 	)
 	if err != nil {
 		return errors.Wrap(err, "failed to create screenshot file")

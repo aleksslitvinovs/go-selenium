@@ -1,5 +1,6 @@
 package selector
 
+// Supported WebDriver selectors.
 const (
 	CSS             = "css selector"
 	XPath           = "xpath"

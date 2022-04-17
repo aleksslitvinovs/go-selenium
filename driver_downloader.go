@@ -13,7 +13,6 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
-	"sync"
 
 	"github.com/pkg/errors"
 	"github.com/theRealAlpaca/go-selenium/logger"
@@ -25,6 +24,7 @@ const (
 )
 
 var (
+	//nolint:revive
 	ErrUnsupportedPlatform = errors.Errorf(
 		"unsupported platform %s %s", runtime.GOOS, runtime.GOARCH,
 	)
@@ -33,11 +33,7 @@ var (
 	defaultPath      = "./"
 )
 
-func downloadDriver(
-	wg *sync.WaitGroup, driverName string,
-) error {
-	defer wg.Done()
-
+func downloadDriver(driverName string) error {
 	// Default driver is found on the system.
 	if _, err := os.Stat(path.Join(defaultPath, driverName)); err == nil {
 		return nil

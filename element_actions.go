@@ -5,9 +5,11 @@ import (
 	"net/http"
 
 	"github.com/pkg/errors"
+	"github.com/theRealAlpaca/go-selenium/logger"
 	"github.com/theRealAlpaca/go-selenium/types"
 )
 
+// GetText returns the text of the element.
 func (e *Element) GetText() string {
 	e.setElementID()
 
@@ -20,9 +22,19 @@ func (e *Element) GetText() string {
 		handleError(res, err)
 	}
 
-	return res.Value.(string)
+	if res.Value == nil {
+		return ""
+	}
+
+	if v, ok := res.Value.(string); ok {
+		return v
+	}
+
+	return ""
 }
 
+// GetAttribute returns the value of the given attribute of the element. If the
+// element does not have the given attribute, an empty string is returned.
 func (e *Element) GetAttribute(attribute string) string {
 	e.setElementID()
 
@@ -37,9 +49,22 @@ func (e *Element) GetAttribute(attribute string) string {
 		handleError(res, err)
 	}
 
-	return res.Value.(string)
+	if res.Value == nil {
+		logger.Errorf(
+			"element %q does not have %q attribute", e.Selector, attribute,
+		)
+
+		return ""
+	}
+
+	if v, ok := res.Value.(string); ok {
+		return v
+	}
+
+	return ""
 }
 
+// Click clicks on the element.
 func (e *Element) Click() *Element {
 	e.setElementID()
 
@@ -55,6 +80,7 @@ func (e *Element) Click() *Element {
 	return e
 }
 
+// SendKeys sends the given keys to the element.
 func (e *Element) SendKeys(input string) *Element {
 	e.setElementID()
 
@@ -86,6 +112,7 @@ func (e *Element) SendKeys(input string) *Element {
 	return e
 }
 
+// Clear clears the text of the element.
 func (e *Element) Clear() *Element {
 	e.setElementID()
 
@@ -101,6 +128,7 @@ func (e *Element) Clear() *Element {
 	return e
 }
 
+// IsPresent checks if the element is present in the DOM.
 func (e *Element) IsPresent() bool {
 	_, err := e.findElement()
 	if err != nil {
@@ -110,18 +138,21 @@ func (e *Element) IsPresent() bool {
 	return err == nil
 }
 
+// IsVisible checks if the element is visible.
 func (e *Element) IsVisible() bool {
 	return e.handleCondition(
 		func() (*response, error) { return e.isVisible() },
 	)
 }
 
+// IsEnabled checks if the element is enabled.
 func (e *Element) IsEnabled() bool {
 	return e.handleCondition(
 		func() (*response, error) { return e.isEnabled() },
 	)
 }
 
+// IsSelected checks if the element is selected.
 func (e *Element) IsSelected() bool {
 	return e.handleCondition(
 		func() (*response, error) { return e.isSelected() },
@@ -174,5 +205,15 @@ func (e *Element) handleCondition(
 		return false
 	}
 
-	return res.Value.(bool)
+	if res.Value == nil {
+		handleError(nil, errors.New("failed top get element's condition"))
+
+		return false
+	}
+
+	if v, ok := res.Value.(bool); ok {
+		return v
+	}
+
+	return false
 }

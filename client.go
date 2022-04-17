@@ -3,6 +3,7 @@ package selenium
 import (
 	"os"
 	"os/signal"
+	"strings"
 	"sync"
 	"syscall"
 	"time"
@@ -12,26 +13,29 @@ import (
 )
 
 type sessionStore struct {
-	sessions map[*Session]bool
 	mu       sync.Mutex
+	sessions map[*Session]bool
 }
+
 type clientParams struct {
 	api    *apiClient
 	driver *Driver
 	ss     *sessionStore
 }
 
+// Opts contains configuration options for the client.
+// TODO: Allow overwriting config values.
 type Opts struct {
-	ConfigPath string
+	ConfigDirectory string
 }
 
 var client *clientParams
 
-// NewClient creates a new client instance with the provided driver. Based on
+// SetClient creates a new client instance with the provided driver. Based on
 // the configuration settings, a driver may be started. Optionally, Opts can be
 // provided for additional configuration.
 func SetClient(d *Driver, opts *Opts) error {
-	if client != nil {
+	if client != nil && client.driver != nil {
 		return nil
 	}
 
@@ -41,24 +45,22 @@ func SetClient(d *Driver, opts *Opts) error {
 
 	go gracefulShutdown()
 
-	err := readConfig(opts.ConfigPath)
+	err := readConfig(opts.ConfigDirectory)
 	if err != nil {
 		return errors.Wrap(err, "failed to read config")
 	}
 
 	logger.SetLogLevel(config.LogLevel)
 
-	wg := &sync.WaitGroup{}
-
 	if d == nil {
-		wg.Add(1)
-
-		err := downloadDriver(wg, chromedriver)
+		err := downloadDriver(parseDriver(config.WebDriver.Browser))
 		if err != nil {
 			return errors.Wrap(err, "failed to download chromedriver")
 		}
 
-		d, err = NewDriver(chromedriver, "http://localhost:4445")
+		d, err = NewDriver(
+			config.WebDriver.BinaryPath, config.WebDriver.RemoteURL,
+		)
 		if err != nil {
 			return errors.Wrap(
 				err, "failed to create browser default driver",
@@ -66,10 +68,8 @@ func SetClient(d *Driver, opts *Opts) error {
 		}
 	}
 
-	wg.Wait()
-
 	if !config.WebDriver.ManualStart {
-		err := d.Start(config.WebDriver)
+		err := d.Start(config.WebDriver.Timeout)
 		if err != nil {
 			return errors.Wrap(err, "failed to launch driver")
 		}
@@ -94,6 +94,19 @@ func gracefulShutdown() {
 	os.Exit(0)
 }
 
+func parseDriver(driverName string) string {
+	switch strings.ToLower(driverName) {
+	case "chrome", "chromedriver":
+		return chromedriver
+	case "firefox", "geckodriver":
+		return geckodriver
+	default:
+		return driverName
+	}
+}
+
+// MustStopClient is a convenience function that wraps StopClient and panics in
+// case an error is encountered.
 func MustStopClient() {
 	if client == nil {
 		return
@@ -105,6 +118,7 @@ func MustStopClient() {
 	}
 }
 
+// StopClient stops the client and its driver.
 func StopClient() error {
 	var tempErr error
 
@@ -114,22 +128,18 @@ func StopClient() error {
 			return
 		}
 
-		err := client.driver.Stop()
+		err := client.driver.stop()
 		if err != nil {
 			tempErr = errors.Wrap(err, "failed to stop driver process")
 		}
 	}()
 
-	client.ss.mu.Lock()
-	defer client.ss.mu.Unlock()
-
 	for s, v := range client.ss.sessions {
 		if v {
-			// TODO: Handle already deleted session
 			s.DeleteSession()
 		}
 
-		if config.RaiseErrorsAutomatically {
+		if !config.RaiseErrorsManually {
 			e := s.RaiseErrors()
 
 			if e != "" {
@@ -137,27 +147,12 @@ func StopClient() error {
 			}
 		}
 
+		client.ss.mu.Lock()
 		delete(client.ss.sessions, s)
+		client.ss.mu.Unlock()
 	}
 
 	return tempErr
-}
-
-func (c *clientParams) RaiseErrors() {
-	c.ss.mu.Lock()
-	defer c.ss.mu.Unlock()
-
-	for s := range c.ss.sessions {
-		errors := s.RaiseErrors()
-
-		if len(errors) == 0 {
-			continue
-		}
-
-		logger.Errorf(
-			"Errors occurred in %s session:\n%s\n", s.GetID(), errors,
-		)
-	}
 }
 
 func (c *clientParams) waitUntilIsReady(timeout time.Duration) error {

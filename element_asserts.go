@@ -1,104 +1,134 @@
 package selenium
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/pkg/errors"
+	"github.com/theRealAlpaca/go-selenium/logger"
 )
 
+// Asserter is a helper struct to assert the element's text, attributes, etc.
 type Asserter struct {
 	e *Element
 }
 
+// Valuer is a helper struct to compare the actual value of an element with the
+// expected using various comparison functions.
 type Valuer struct {
-	actual string
-	e      *Element
+	actual   string
+	e        *Element
+	property string
+	isEqual  bool
 }
 
+// ShouldHave returns an Asserter for the given element. The returned Asserter
+// can be used to assert the element's text, attributes, etc.
 func (e *Element) ShouldHave() *Asserter {
 	return &Asserter{
 		e: e,
 	}
 }
 
+// Text allows asserting the element's text.
 func (a *Asserter) Text() *Valuer {
 	text := a.e.GetText()
 
 	return &Valuer{
-		actual: text,
-		e:      a.e,
+		actual:   text,
+		e:        a.e,
+		property: "text",
+		isEqual:  true,
 	}
 }
 
+// Attribute allows asserting the element's attributes.
 func (a *Asserter) Attribute(attribute string) *Valuer {
 	return &Valuer{
-		actual: a.e.GetAttribute(attribute),
-		e:      a.e,
+		actual:   a.e.GetAttribute(attribute),
+		e:        a.e,
+		property: fmt.Sprintf("attribute %q", attribute),
+		isEqual:  true,
 	}
 }
 
-func (t *Valuer) EqualsTo(expected string) {
-	if t.actual != expected {
-		handleError(
-			nil,
-			errors.Errorf(
-				"text %q should have been equal to %q", t.actual, expected,
-			),
-		)
-	}
+// Not negates the following assertion.
+func (v *Valuer) Not() *Valuer {
+	v.isEqual = false
+
+	return v
 }
 
-func (t *Valuer) NotEqualsTo(expected string) {
-	if t.actual == expected {
-		handleError(
-			nil,
-			errors.Errorf(
-				"text %q should have not been equal to %q", t.actual, expected,
-			),
-		)
-	}
+type comparer struct {
+	past    string
+	present string
 }
 
-func (t *Valuer) StartsWith(expected string) {
-	if strings.HasPrefix(t.actual, expected) {
-		handleError(
-			nil,
-			errors.Errorf(
-				"text %q should have started with %q", t.actual, expected,
-			),
-		)
-	}
+var (
+	equalTo   = comparer{"been equal to", "equal"}
+	startWith = comparer{"started with", "start with"}
+	endWith   = comparer{"ended with", "end with"}
+	contain   = comparer{"contained", "contain"}
+)
+
+// EqualTo asserts that the actual value of the element is equal to the given.
+func (v *Valuer) EqualTo(expected string) {
+	v.compare(expected, equalTo)
 }
 
-func (t *Valuer) EndsWith(expected string) {
-	if !strings.HasSuffix(t.actual, expected) {
-		handleError(
-			nil,
-			errors.Errorf(
-				"text %q should have ended with %q", t.actual, expected,
-			),
-		)
-	}
+// StartWith asserts that the actual value of the element starts with the
+// given.
+func (v *Valuer) StartWith(expected string) {
+	v.compare(expected, startWith)
 }
 
-func (t *Valuer) Contains(expected string) {
-	if !strings.Contains(t.actual, expected) {
-		handleError(
-			nil,
-			errors.Errorf(
-				"text %q shoud have contained %q", t.actual, expected,
-			),
-		)
-	}
+// EndWith asserts that the actual value of the element ends with the given.
+func (v *Valuer) EndWith(expected string) {
+	v.compare(expected, endWith)
 }
 
-func (t *Valuer) NotContains(expected string) {
-	if strings.Contains(t.actual, expected) {
-		handleError(
-			nil,
-			errors.Errorf(
-				"text %q should not have contained %q", t.actual, expected,
-			),
-		)
+// Contain asserts that the actual value of the element contains the given.
+func (v *Valuer) Contain(expected string) {
+	v.compare(expected, contain)
+}
+
+func (v *Valuer) compare(expected string, cmp comparer) {
+	var result bool
+
+	switch cmp {
+	case equalTo:
+		result = v.actual == expected
+	case startWith:
+		result = strings.HasPrefix(v.actual, expected)
+	case endWith:
+		result = strings.HasSuffix(v.actual, expected)
+	case contain:
+		result = strings.Contains(v.actual, expected)
 	}
+
+	not := comparer{"", "does"}
+	if !v.isEqual {
+		not = comparer{"not ", "does not"}
+	}
+
+	if xnor(result, v.isEqual) {
+		logger.Infof(
+			"element's %s %s %s %q",
+			v.property, not.present, cmp.present, expected,
+		)
+
+		return
+	}
+
+	handleError(
+		nil,
+		errors.Errorf(
+			"element's %s should have %s%s %q, actual value %q",
+			v.property, not.past, cmp.past, expected, v.actual,
+		),
+	)
+}
+
+func xnor(a, b bool) bool {
+	return (a && b) || (!a && !b)
 }

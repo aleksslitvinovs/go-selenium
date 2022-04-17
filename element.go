@@ -7,14 +7,16 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/theRealAlpaca/go-selenium/logger"
-	"github.com/theRealAlpaca/go-selenium/selector"
 	"github.com/theRealAlpaca/go-selenium/types"
 )
 
+// E is a helper struct that represents web element.
 type E struct {
 	Selector     string `json:"value"`
 	SelectorType string `json:"using"`
 }
+
+// Element describes web element.
 type Element struct {
 	E
 
@@ -22,12 +24,6 @@ type Element struct {
 	session  *Session
 	settings *elementSettings
 	api      *apiClient
-}
-
-var defaultSettings = &elementSettings{
-	PollInterval: types.Time{Duration: 500 * time.Millisecond},
-	RetryTimeout: types.Time{Duration: 5 * time.Second},
-	SelectorType: selector.CSS,
 }
 
 const (
@@ -44,23 +40,35 @@ func (s *Session) NewElement(e interface{}) *Element {
 		return &Element{
 			E: E{
 				Selector:     v,
-				SelectorType: s.defaultLocator,
+				SelectorType: s.locatorStrategy,
 			},
-			settings: defaultSettings,
+			settings: config.Element,
 			session:  s,
 			api:      s.api,
 		}
 	case *E:
+		if v == nil {
+			return nil
+		}
+
+		if v.SelectorType == "" {
+			v.SelectorType = s.locatorStrategy
+		}
+
 		return &Element{
 			E:        *v,
-			settings: defaultSettings,
+			settings: config.Element,
 			session:  s,
 			api:      s.api,
 		}
 	case E:
+		if v.SelectorType == "" {
+			v.SelectorType = s.locatorStrategy
+		}
+
 		return &Element{
 			E:        v,
-			settings: defaultSettings,
+			settings: config.Element,
 			session:  s,
 			api:      s.api,
 		}
@@ -118,7 +126,7 @@ func (e *Element) setElementID() {
 func (e *Element) findElement() (string, error) {
 	res, err := e.api.executeRequest(
 		http.MethodPost,
-		fmt.Sprintf("/session/%s/element", e.session.GetID()),
+		fmt.Sprintf("/session/%s/element", e.session.id),
 		e,
 	)
 	if err != nil {

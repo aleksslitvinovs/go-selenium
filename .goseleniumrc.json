@@ -1,0 +1,7 @@
+{
+  "logging": "info",
+  "soft_asserts": false,
+  "webdriver": {
+    "browser": "chrome"
+  }
+}

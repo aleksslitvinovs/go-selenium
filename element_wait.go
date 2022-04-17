@@ -7,11 +7,13 @@ import (
 	"github.com/theRealAlpaca/go-selenium/logger"
 )
 
+// Waiter is a helper struct to wait for an element to be present, visible, etc.
 type Waiter struct {
 	e       *Element
 	timeout time.Duration
 }
 
+// WaitFor creates an instance of *Waiter with the provided timeout duration.
 func (e *Element) WaitFor(timeout time.Duration) *Waiter {
 	return &Waiter{
 		e:       e,
@@ -19,32 +21,42 @@ func (e *Element) WaitFor(timeout time.Duration) *Waiter {
 	}
 }
 
+// UntilIsPresent waits until the element is present.
 func (w *Waiter) UntilIsPresent() *Element {
 	return waitPresent(w, true)
 }
+
+// UntilIsNotPresent waits until the element is not present.
 func (w *Waiter) UntilIsNotPresent() *Element {
 	return waitPresent(w, false)
 }
 
+// UntilIsVisible waits until the element is visible.
 func (w *Waiter) UntilIsVisible() *Element {
 	return waitCondition(w, w.e.isVisible, true, "visible")
 }
+
+// UntilIsNotVisible waits until the element is visible.
 func (w *Waiter) UntilIsNotVisible() *Element {
 	return waitCondition(w, w.e.isVisible, false, "not visible")
 }
 
+// UntilIsEnabled waits until the element is enabled.
 func (w *Waiter) UntilIsEnabled() *Element {
 	return waitCondition(w, w.e.isEnabled, true, "enabled")
 }
 
+// UntilIsNotEnabled waits until the element is not enabled.
 func (w *Waiter) UntilIsNotEnabled() *Element {
 	return waitCondition(w, w.e.isEnabled, false, "not enabled")
 }
 
+// UntilIsSelected waits until the element is selected.
 func (w *Waiter) UntilIsSelected() *Element {
 	return waitCondition(w, w.e.isSelected, true, "selected")
 }
 
+// UntilIsNotSelected waits until the element is not selected.
 func (w *Waiter) UntilIsNotSelected() *Element {
 	return waitCondition(w, w.e.isSelected, false, "not selected")
 }
@@ -89,16 +101,20 @@ func waitCondition(
 			return w.e
 		}
 
-		if res.Value.(bool) == expected {
-			logger.Infof(
-				"Element %q is %s after %s (time elapsed %dms)",
-				w.e.Selector,
-				conditionName,
-				w.timeout,
-				time.Since(startTime).Milliseconds(),
-			)
+		if res.Value != nil {
+			if v, ok := res.Value.(bool); ok {
+				if v == expected {
+					logger.Infof(
+						"Element %q is %s after %s (time elapsed %dms)",
+						w.e.Selector,
+						conditionName,
+						w.timeout,
+						time.Since(startTime).Milliseconds(),
+					)
 
-			return w.e
+					return w.e
+				}
+			}
 		}
 
 		time.Sleep(w.e.settings.PollInterval.Duration)

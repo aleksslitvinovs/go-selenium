@@ -2,6 +2,8 @@ package types
 
 import "errors"
 
+// TODO: Write descriptions for all errors, based on
+// https://www.w3.org/TR/webdriver/#errors
 var (
 	// WebDriver errors.
 

@@ -3,6 +3,7 @@ package selenium
 import (
 	"encoding/json"
 	"os"
+	"path"
 	"time"
 
 	"github.com/pkg/errors"
@@ -11,81 +12,78 @@ import (
 	"github.com/theRealAlpaca/go-selenium/types"
 )
 
-//nolint:tagliatelle
 type runnerSettings struct {
 	ParallelRuns int `json:"parallel_runs"`
 }
 
-//nolint:tagliatelle
 type elementSettings struct {
+	SelectorType   string     `json:"selector_type"`
 	IgnoreNotFound bool       `json:"ignore_not_found"`
 	RetryTimeout   types.Time `json:"retry_timeout"`
 	PollInterval   types.Time `json:"poll_interval"`
-	SelectorType   string     `json:"selector_type"`
 }
 
-//nolint:tagliatelle
 type webDriverConfig struct {
-	ManualStart  bool                   `json:"manual_start"`
-	PathToBinary string                 `json:"path"`
-	URL          string                 `json:"url"`
-	Timeout      types.Time             `json:"timeout"`
-	Capabalities map[string]interface{} `json:"capabilities"`
+	Browser      string                 `json:"browser"`
+	ManualStart  bool                   `json:"manual_start,omitempty"`
+	BinaryPath   string                 `json:"binary_path,omitempty"`
+	RemoteURL    string                 `json:"remote_url,omitempty"`
+	Timeout      *types.Time            `json:"timeout,omitempty"`
+	Capabalities map[string]interface{} `json:"capabilities,omitempty"`
 }
 
-//nolint:tagliatelle
 type configParams struct {
-	LogLevel                 logger.LevelName `json:"logging"`
-	SoftAsserts              bool             `json:"soft_asserts"`
-	ScreenshotPath           string           `json:"screenshot_path"`
-	Runner                   *runnerSettings  `json:"runner"`
-	RaiseErrorsAutomatically bool             `json:"raise_errors_automatically"` //nolint:lll
-	ElementSettings          *elementSettings `json:"element_settings,omitempty"` //nolint:lll
+	LogLevel            string           `json:"logging"`
+	SoftAsserts         bool             `json:"soft_asserts"`
+	ScreenshotDir       string           `json:"screenshot_dir,omitempty"`
+	RaiseErrorsManually bool             `json:"raise_errors_automatically,omitempty"` //nolint:lll
+	Runner              *runnerSettings  `json:"runner,omitempty"`
+	Element             *elementSettings `json:"element,omitempty"`
 	// TODO: Allow running multiple drivers.
 	WebDriver *webDriverConfig `json:"webdriver,omitempty"`
 }
 
 var config *configParams
 
-const defaultConfigPath = "goseleniumrc.json"
+const defaultConfigPath = ".goseleniumrc.json"
 
-func readConfig(configPath string) error {
-	if configPath == "" {
-		configPath = defaultConfigPath
-	}
-
-	_, err := os.Stat(configPath)
+func readConfig(configDirectory string) error {
+	_, err := os.Stat(path.Join(configDirectory, defaultConfigPath))
 	if err != nil {
-		if errors.Is(err, os.ErrNotExist) {
-			logger.Info(
-				"No config file found. Will create and use default config.",
-			)
-
-			c, err := createDefaultConfig()
-			if err != nil {
-				return errors.Wrap(err, "failed to create default config")
-			}
-
-			config = c
-
-			return nil
+		if !errors.Is(err, os.ErrNotExist) {
+			return errors.Wrap(err, "failed to stat config file")
 		}
 
-		return errors.Wrap(err, "failed to stat config file")
+		logger.Info(
+			"No config file found. Will create and use default config.",
+		)
+
+		c, err := createDefaultConfig()
+		if err != nil {
+			return errors.Wrap(err, "failed to create default config")
+		}
+
+		c.validateConfig()
+
+		config = c
+
+		return nil
 	}
 
-	c, err := readConfigFromFile(configPath)
-	if err != nil {
-		return errors.Wrap(err, "failed to read config file")
+	if config == nil {
+		c, err := readConfigFromFile(configDirectory)
+		if err != nil {
+			return errors.Wrap(err, "failed to read config file")
+		}
+
+		c.validateConfig()
+
+		if err := c.writeToConfig(configDirectory); err != nil {
+			return errors.Wrap(err, "failed to write config")
+		}
+
+		config = c
 	}
-
-	c.validateConfig()
-
-	if err := c.writeToConfig(configPath); err != nil {
-		return errors.Wrap(err, "failed to write config")
-	}
-
-	config = c
 
 	return nil
 }
@@ -107,14 +105,9 @@ func readConfigFromFile(configPath string) (*configParams, error) {
 
 func createDefaultConfig() (*configParams, error) {
 	c := &configParams{
-		LogLevel:                 logger.InfoLvl,
-		SoftAsserts:              false,
-		Runner:                   &runnerSettings{ParallelRuns: 1},
-		RaiseErrorsAutomatically: true,
-		ElementSettings:          &elementSettings{},
-		WebDriver: &webDriverConfig{Timeout: types.Time{
-			Duration: 10 * time.Second,
-		}},
+		LogLevel:    logger.InfoLvl,
+		SoftAsserts: false,
+		WebDriver:   &webDriverConfig{Browser: "chrome"},
 	}
 
 	err := c.writeToConfig(defaultConfigPath)
@@ -175,45 +168,67 @@ func (c *configParams) validateRunner() {
 }
 
 func (c *configParams) validateElement() {
-	if c.ElementSettings.SelectorType == "" {
+	defaultSettings := &elementSettings{
+		IgnoreNotFound: false,
+		SelectorType:   selector.CSS,
+		RetryTimeout:   types.Time{Duration: 10 * time.Second},
+		PollInterval:   types.Time{Duration: 500 * time.Millisecond},
+	}
+
+	if c.Element == nil {
+		c.Element = &elementSettings{}
+	}
+
+	if c.Element.SelectorType == "" {
 		logger.Warn(`"selector_type" is not set. Defaulting to "css".`)
 
-		c.ElementSettings.SelectorType = selector.CSS
+		c.Element.SelectorType = defaultSettings.SelectorType
 	}
 
-	if c.ElementSettings.RetryTimeout.Duration == 0 {
+	if c.Element.RetryTimeout.Duration == 0 {
 		logger.Warn(`"retry_timeout" is not set. Defaulting to "10s".`)
 
-		c.ElementSettings.RetryTimeout = types.Time{Duration: 10 * time.Second}
+		c.Element.RetryTimeout = defaultSettings.RetryTimeout
 	}
 
-	if c.ElementSettings.PollInterval.Duration == 0 {
+	if c.Element.PollInterval.Duration == 0 {
 		logger.Warn(`"poll_interval" is not set. Defaulting to "500ms".`)
 
-		c.ElementSettings.PollInterval = types.Time{
-			Duration: 500 * time.Millisecond,
-		}
+		c.Element.PollInterval = defaultSettings.PollInterval
 	}
 }
 
 func (c *configParams) validateWebDriver() {
-	if c.WebDriver.PathToBinary == "" {
+	defaultSettings := &webDriverConfig{
+		Browser:      "chrome",
+		ManualStart:  false,
+		BinaryPath:   "chromedriver",
+		RemoteURL:    "http://localhost:4444",
+		Timeout:      &types.Time{Duration: 10 * time.Second},
+		Capabalities: make(map[string]interface{}),
+	}
+
+	if c.WebDriver.BinaryPath == "" {
 		logger.Warn(
 			`"webdriver.binary" is not set. Defaulting to "chromedriver".`,
 		)
 
-		c.WebDriver.PathToBinary = "chromedriver"
+		c.WebDriver.BinaryPath = defaultSettings.BinaryPath
+	}
+
+	if c.WebDriver.Timeout == nil {
+		c.WebDriver.Timeout = &types.Time{}
 	}
 
 	if c.WebDriver.Timeout.Duration <= 0 {
 		logger.Warn(`"timeout" is not set. Defaulting to "10s".`)
 
-		c.WebDriver.Timeout = types.Time{Duration: 10 * time.Second}
+		c.WebDriver.Timeout = defaultSettings.Timeout
 	}
 
-	if c.WebDriver.URL == "" {
+	if c.WebDriver.RemoteURL == "" {
 		logger.Warn(`"url" is not set. Defaulting to "http://localhost:4444".`)
 
-		c.WebDriver.URL = "http://localhost:4444"
+		c.WebDriver.RemoteURL = defaultSettings.RemoteURL
 	}
 }

@@ -7,6 +7,7 @@ import (
 	"github.com/pkg/errors"
 )
 
+// Time is a wrapper around time.Duration with improved JSON (un)marshalling.
 type Time struct {
 	time.Duration
 }
@@ -15,6 +16,7 @@ func (t *Time) String() string {
 	return t.Duration.String()
 }
 
+// MarshalJSON marshals Time.
 func (t *Time) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(t.String())
 	if err != nil {
@@ -24,6 +26,7 @@ func (t *Time) MarshalJSON() ([]byte, error) {
 	return data, nil
 }
 
+// UnmarshalJSON unmarshals Time.
 func (t *Time) UnmarshalJSON(data []byte) error {
 	var s string
 

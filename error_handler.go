@@ -23,7 +23,6 @@ func handleError(res *response, err error) {
 			return
 		}
 
-		// TODO: Handle error response (element not visible, etc.)
 		panic(errRes.Error())
 	}
 

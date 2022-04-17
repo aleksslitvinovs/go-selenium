@@ -21,8 +21,7 @@ type test struct {
 }
 
 type runner struct {
-	tests []*test
-
+	tests      []*test
 	beforeAll  func()
 	beforeEach func()
 	afterEach  func()
@@ -31,6 +30,8 @@ type runner struct {
 
 var r = &runner{}
 
+// Run executes all set tests. If the client is not set, it sets one with the
+// default driver based on the config settings.
 func Run() {
 	defer func() {
 		MustStopClient()
@@ -41,6 +42,10 @@ func Run() {
 			if t.hadError {
 				errorCount++
 			}
+		}
+
+		if errorCount < 0 {
+			os.Exit(1)
 		}
 
 		if errorCount > 0 {
@@ -58,10 +63,25 @@ func Run() {
 		)
 	}()
 
-	if client == nil || config == nil {
-		panic("Client is not set")
+	if client == nil {
+		err := SetClient(nil, nil)
+		if err != nil {
+			logger.Error(err)
+
+			return
+		}
 	}
 
+	if config == nil {
+		logger.Error("No configuration set")
+
+		return
+	}
+
+	executeTests()
+}
+
+func executeTests() {
 	runBeforeAll()
 
 	pr := config.Runner.ParallelRuns
@@ -93,7 +113,6 @@ func Run() {
 
 	runAfterAll()
 }
-
 func worker(tc <-chan *test, wg *sync.WaitGroup) {
 	for t := range tc {
 		runTest(t, wg)
@@ -161,22 +180,29 @@ func runAfterAll() {
 	}
 }
 
+// SetBeforeAll sets the function that will be executed before all tests.
 func SetBeforeAll(f func()) {
 	r.beforeAll = f
 }
 
+// SetBeforeEach sets the function that will be executed before each test.
 func SetBeforeEach(f func()) {
 	r.beforeEach = f
 }
 
+// SetAfterEach sets the function that will be executed after each test.
 func SetAfterEach(f func()) {
 	r.afterEach = f
 }
 
+// SetAfterAll sets the function that will be executed after all tests.
 func SetAfterAll(f func()) {
 	r.afterAll = f
 }
 
+// SetTest sets the test function. The name is used to identify the test is
+// optional. If no name is provided, test_<test_id> is used. If the given name
+// is already in use, test ID is appended to the name.
 func SetTest(fn TestFunction, name ...string) {
 	if len(name) == 0 {
 		r.tests = append(r.tests, &test{
@@ -202,10 +228,4 @@ func SetTest(fn TestFunction, name ...string) {
 		name: name[0],
 		fn:   fn,
 	})
-}
-
-func SetTests(fns map[string]TestFunction) {
-	for n, fn := range fns {
-		SetTest(fn, n)
-	}
 }

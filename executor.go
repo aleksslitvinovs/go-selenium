@@ -206,11 +206,15 @@ func (r *response) UnmarshalJSON(data []byte) error {
 
 	switch values := res.Value.(type) {
 	case map[string]interface{}:
-		for k, v := range values {
+		for k, value := range values {
 			if strings.HasPrefix(strings.ToLower(k), "element") {
-				r.Value = map[string]string{k: v.(string)}
+				if v, ok := value.(string); ok {
+					r.Value = map[string]string{k: v}
 
-				return nil
+					return nil
+				}
+
+				return errors.New("could not convert element to string")
 			}
 		}
 
