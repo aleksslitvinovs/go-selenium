@@ -130,10 +130,12 @@ func (e *Element) Clear() *Element {
 
 // IsPresent checks if the element is present in the DOM.
 func (e *Element) IsPresent() bool {
-	_, err := e.findElement()
+	id, err := e.findElement()
 	if err != nil {
 		handleError(nil, err)
 	}
+
+	e.id = id
 
 	return err == nil
 }

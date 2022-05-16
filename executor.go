@@ -35,7 +35,7 @@ var f = &colorjson.Formatter{
 	StringMaxLength: 50,
 	DisabledColor:   false,
 	Indent:          0,
-	RawStrings:      true,
+	RawStrings:      false,
 }
 
 type apiClient struct {

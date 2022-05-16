@@ -31,6 +31,7 @@ linters:
     - gomnd
     - nestif
     - contextcheck
+    - exhaustruct
     # default disabled linters
     - exhaustive
     - exhaustivestruct
@@ -47,6 +48,10 @@ linters:
     - interfacer
     - maligned
     - scopelint
+    # FIXME: temporary disabled linter until golangci-lint supports go 1.18
+    - nolintlint
+    # FIXME: temporary disabled linter due to bug: https://github.com/lufeee/execinquery/issues/3
+    - execinquery
   fast: false
 
 issues:

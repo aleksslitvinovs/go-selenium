@@ -165,6 +165,16 @@ func waitPresent(
 		}
 
 		if id != "" && bePresent || id == "" && !bePresent {
+			logger.Infof(
+				"Element %q is %s after %s (time elapsed %dms)",
+				w.e.Selector,
+				conditionName,
+				w.timeout,
+				time.Since(startTime).Milliseconds(),
+			)
+
+			w.e.id = id
+
 			return w.e
 		}
 

@@ -48,7 +48,9 @@ var config *configParams
 const defaultConfigPath = ".goseleniumrc.json"
 
 func readConfig(configDirectory string) error {
-	_, err := os.Stat(path.Join(configDirectory, defaultConfigPath))
+	filePath := path.Join(configDirectory, defaultConfigPath)
+
+	_, err := os.Stat(filePath)
 	if err != nil {
 		if !errors.Is(err, os.ErrNotExist) {
 			return errors.Wrap(err, "failed to stat config file")
@@ -71,16 +73,12 @@ func readConfig(configDirectory string) error {
 	}
 
 	if config == nil {
-		c, err := readConfigFromFile(configDirectory)
+		c, err := readConfigFromFile(filePath)
 		if err != nil {
-			return errors.Wrap(err, "failed to read config file")
+			return errors.Wrap(err, "failed to read from config file")
 		}
 
 		c.validateConfig()
-
-		if err := c.writeToConfig(configDirectory); err != nil {
-			return errors.Wrap(err, "failed to write config")
-		}
 
 		config = c
 	}
@@ -88,8 +86,8 @@ func readConfig(configDirectory string) error {
 	return nil
 }
 
-func readConfigFromFile(configPath string) (*configParams, error) {
-	data, err := os.ReadFile(configPath)
+func readConfigFromFile(filePath string) (*configParams, error) {
+	data, err := os.ReadFile(filePath)
 	if err != nil {
 		return config, errors.Wrap(err, "failed to read config file")
 	}
@@ -202,7 +200,7 @@ func (c *configParams) validateWebDriver() {
 	defaultSettings := &webDriverConfig{
 		Browser:      "chrome",
 		ManualStart:  false,
-		BinaryPath:   "chromedriver",
+		BinaryPath:   "./chromedriver",
 		RemoteURL:    "http://localhost:4444",
 		Timeout:      &types.Time{Duration: 10 * time.Second},
 		Capabalities: make(map[string]interface{}),

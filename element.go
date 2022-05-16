@@ -35,6 +35,10 @@ const (
 // NewElement returns a new Element. The parameter can be either a selector (
 // uses session's default locator) or *E or E struct.
 func (s *Session) NewElement(e interface{}) *Element {
+	if e == nil {
+		return nil
+	}
+
 	switch v := e.(type) {
 	case string:
 		return &Element{
@@ -47,10 +51,6 @@ func (s *Session) NewElement(e interface{}) *Element {
 			api:      s.api,
 		}
 	case *E:
-		if v == nil {
-			return nil
-		}
-
 		if v.SelectorType == "" {
 			v.SelectorType = s.locatorStrategy
 		}

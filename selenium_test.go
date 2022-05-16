@@ -2,18 +2,14 @@ package selenium_test
 
 import (
 	"fmt"
+	"strconv"
 	"testing"
 	"time"
 
+	"github.com/pkg/errors"
 	"github.com/theRealAlpaca/go-selenium"
 	"github.com/theRealAlpaca/go-selenium/key"
 )
-
-func Test(t *testing.T) {
-	selenium.SetTest(AssertTest)
-
-	selenium.Run()
-}
 
 func MyTest(s *selenium.Session) {
 	s.OpenURL("https://duckduckgo.com/")
@@ -28,6 +24,73 @@ func MyTest(s *selenium.Session) {
 		GetText()
 
 	fmt.Printf("DuckDuckGo result: %s\n", result)
+}
+
+func EbayTestSearch(s *selenium.Session) {
+	s.OpenURL("https://www.amazon.com/")
+
+	s.NewElement(".nav-search-field .nav-input").
+		WaitFor(10 * time.Second).UntilIsVisible().
+		SendKeys("MacBook").
+		SendKeys(key.Enter)
+
+	fmt.Println(
+		"First result text:",
+		s.NewElement(`[cel_widget_id="MAIN-SEARCH_RESULTS-2]`).
+			WaitFor(10*time.Second).UntilIsVisible().
+			GetText(),
+	)
+
+	s.TakeScreenshot("first result.png")
+}
+
+func UltimateQAForm(s *selenium.Session) {
+	s.OpenURL("https://ultimateqa.com/filling-out-forms/")
+
+	s.NewElement("#et_pb_contact_name_1").
+		WaitFor(10 * time.Second).UntilIsVisible().
+		SendKeys("John Smith")
+
+	s.NewElement("#et_pb_contact_message_1").
+		WaitFor(10 * time.Second).UntilIsVisible().
+		SendKeys("Hello, I'm John Smith!")
+
+	fillCatpcha(s)
+
+	s.NewElement("#et_pb_contact_form_1 .et_pb_button").
+		WaitFor(10 * time.Second).UntilIsVisible().
+		Click()
+
+	fillCatpcha(s)
+
+	s.NewElement("#et_pb_contact_form_1 .et_pb_button").
+		WaitFor(10 * time.Second).UntilIsVisible().
+		Click()
+
+	time.Sleep(5 * time.Second)
+
+	s.NewElement("#et_pb_contact_form_1 .et-pb-contact-message p").
+		WaitFor(10 * time.Second).UntilIsVisible().
+		ShouldHave().Text().EqualTo("Thanks for contacting us")
+}
+
+func fillCatpcha(s *selenium.Session) {
+	captcha := s.NewElement(".et_pb_contact_captcha").
+		WaitFor(10 * time.Second).UntilIsVisible()
+
+	firstDigit, err := strconv.Atoi(captcha.GetAttribute("data-first_digit"))
+	if err != nil {
+		panic(errors.Wrap(err, "could not get first digit"))
+	}
+
+	secondDigit, err := strconv.Atoi(captcha.GetAttribute("data-second_digit"))
+	if err != nil {
+		panic(errors.Wrap(err, "could not get second digit"))
+	}
+
+	captcha.SendKeys(strconv.Itoa(firstDigit + secondDigit))
+
+	fmt.Println(firstDigit + secondDigit)
 }
 
 func Test2(t *testing.T) {
@@ -102,16 +165,6 @@ func IFrameTest(s *selenium.Session) {
 	)
 }
 
-func JitsiTest(s *selenium.Session) {
-	s.OpenURL("https://meet.jit.si/LoaderoWebRTC_R")
-
-	s.NewElement(`[aria-label="Join meeting"]`).
-		WaitFor(time.Second * 5).UntilIsVisible().
-		Click()
-
-	time.Sleep(10 * time.Second)
-}
-
 func Testy(s *selenium.Session) {
 	s.OpenURL("https://app.stage.loadero.com/login")
 	// s.NewWindow()
@@ -148,4 +201,19 @@ func Testy(s *selenium.Session) {
 	s.NewElement(".button--primary").
 		WaitFor(time.Second * 5).UntilIsVisible().
 		Click()
+}
+
+func DuckDuckGo(s *selenium.Session) {
+	s.OpenURL("https://duckduckgo.com/")
+
+	s.NewElement("#search_form_input_homepage").
+		WaitFor(10 * time.Second).UntilIsVisible().
+		SendKeys("WebDriver").
+		SendKeys(key.Enter)
+
+	result := s.NewElement("#r1-0 .result__a").
+		WaitFor(10 * time.Second).UntilIsVisible().
+		GetText()
+
+	fmt.Printf("DuckDuckGo result: %s\n", result)
 }

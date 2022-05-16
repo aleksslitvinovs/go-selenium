@@ -17,14 +17,15 @@ type TestFunction func(s *Session)
 type test struct {
 	name     string
 	fn       TestFunction
+	s        *Session
 	hadError bool
 }
 
 type runner struct {
 	tests      []*test
 	beforeAll  func()
-	beforeEach func()
-	afterEach  func()
+	beforeEach TestFunction
+	afterEach  TestFunction
 	afterAll   func()
 }
 
@@ -33,10 +34,10 @@ var r = &runner{}
 // Run executes all set tests. If the client is not set, it sets one with the
 // default driver based on the config settings.
 func Run() {
+	var errorCount int
+
 	defer func() {
 		MustStopClient()
-
-		var errorCount int
 
 		for _, t := range r.tests {
 			if t.hadError {
@@ -44,7 +45,7 @@ func Run() {
 			}
 		}
 
-		if errorCount < 0 {
+		if errorCount > 0 {
 			os.Exit(1)
 		}
 
@@ -68,6 +69,8 @@ func Run() {
 		if err != nil {
 			logger.Error(err)
 
+			errorCount++
+
 			return
 		}
 	}
@@ -89,6 +92,8 @@ func executeTests() {
 		pr = 1
 	}
 
+	fmt.Println("parallel", pr)
+
 	jobs := make(chan *test, pr)
 	defer close(jobs)
 
@@ -101,12 +106,9 @@ func executeTests() {
 	for _, t := range r.tests {
 		wg.Add(1)
 
-		runBeforeEach()
-
 		logger.Infof("running test: %s", t.name)
-		jobs <- t
 
-		runAfterEach()
+		jobs <- t
 	}
 
 	wg.Wait()
@@ -122,6 +124,8 @@ func worker(tc <-chan *test, wg *sync.WaitGroup) {
 func runTest(t *test, wg *sync.WaitGroup) {
 	defer wg.Done()
 
+	defer handleTestPanic(t)
+
 	s, err := NewSession()
 	if err != nil {
 		panic(err)
@@ -133,27 +137,35 @@ func runTest(t *test, wg *sync.WaitGroup) {
 
 	defer s.DeleteSession()
 
-	defer func() {
-		err := recover()
-		if err == nil {
-			return
-		}
+	runBeforeEach(s)
 
-		debug.PrintStack()
+	t.fn(t.s)
 
-		t.hadError = true
+	runAfterEach(s)
+}
 
-		switch v := err.(type) {
-		case error:
-			s.AddError(v.Error())
-		case string:
-			s.AddError(v)
-		default:
-			s.AddError(fmt.Sprintf("%v", v))
-		}
-	}()
+func handleTestPanic(t *test) {
+	err := recover()
+	if err == nil {
+		return
+	}
 
-	t.fn(s)
+	debug.PrintStack()
+
+	t.hadError = true
+
+	if t.s == nil {
+		return
+	}
+
+	switch v := err.(type) {
+	case error:
+		t.s.AddError(v.Error())
+	case string:
+		t.s.AddError(v)
+	default:
+		t.s.AddError(fmt.Sprintf("%v", v))
+	}
 }
 
 func runBeforeAll() {
@@ -162,15 +174,15 @@ func runBeforeAll() {
 	}
 }
 
-func runBeforeEach() {
+func runBeforeEach(s *Session) {
 	if r.beforeEach != nil {
-		r.beforeEach()
+		r.beforeEach(s)
 	}
 }
 
-func runAfterEach() {
+func runAfterEach(s *Session) {
 	if r.afterEach != nil {
-		r.afterEach()
+		r.afterEach(s)
 	}
 }
 
@@ -181,23 +193,23 @@ func runAfterAll() {
 }
 
 // SetBeforeAll sets the function that will be executed before all tests.
-func SetBeforeAll(f func()) {
-	r.beforeAll = f
+func SetBeforeAll(fn func()) {
+	r.beforeAll = fn
 }
 
 // SetBeforeEach sets the function that will be executed before each test.
-func SetBeforeEach(f func()) {
-	r.beforeEach = f
+func SetBeforeEach(fn TestFunction) {
+	r.beforeEach = fn
 }
 
 // SetAfterEach sets the function that will be executed after each test.
-func SetAfterEach(f func()) {
-	r.afterEach = f
+func SetAfterEach(fn TestFunction) {
+	r.afterEach = fn
 }
 
 // SetAfterAll sets the function that will be executed after all tests.
-func SetAfterAll(f func()) {
-	r.afterAll = f
+func SetAfterAll(fn func()) {
+	r.afterAll = fn
 }
 
 // SetTest sets the test function. The name is used to identify the test is
