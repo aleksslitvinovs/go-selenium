@@ -99,7 +99,7 @@ All available configuration options:
 | `webdriver.manual_start`     | Start browser driver process manually.                                      | `bool`                   | `false`                   |
 | `webdriver.binary_path`      | Path to browser driver binary.                                              | `string`                 | `"./chromedriver"`        |
 | `webdriver.remote_url`       | URL with port to which WebDriver commands are sent.                         | `string`                 | `"http://localhost:4444"` |
-| `webdriver.timeout`          | Time which which browser driver should be ready to accept command.          | [`time`](#time-format)   | `"10 s"`                  |
+| `webdriver.timeout`          | Time which which browser driver should be ready to accept command.          | [`time`](#time-format)   | `"10s"`                   |
 | `webdriver.capabilities`     | Browser capabilities.                                                       | `map[string]interface{}` | `{}`                      |
 
 ## Hooks

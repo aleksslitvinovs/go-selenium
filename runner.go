@@ -3,7 +3,6 @@ package selenium
 import (
 	"fmt"
 	"os"
-	"runtime/debug"
 	"sync"
 
 	"github.com/fatih/color"
@@ -152,8 +151,6 @@ func handleTestPanic(t *test) {
 	if err == nil {
 		return
 	}
-
-	debug.PrintStack()
 
 	t.hadError = true
 

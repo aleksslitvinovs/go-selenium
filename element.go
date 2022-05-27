@@ -176,16 +176,21 @@ func isAllowedError(err error) bool {
 	return false
 }
 
-func getElementID(elements map[string]string) string {
+func getElementID[T string | interface{}](elements map[string]T) string {
 	supportedIDs := []string{webElementID, legacyElementID}
 
 	for _, key := range supportedIDs {
 		e, ok := elements[key]
-		if !ok || e == "" {
+		if !ok {
 			continue
 		}
 
-		return e
+		id, ok := any(e).(string)
+		if !ok {
+			continue
+		}
+
+		return id
 	}
 
 	return ""

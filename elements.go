@@ -12,7 +12,7 @@ import (
 type Elements struct {
 	E
 
-	elements []string `json:"-"`
+	elements []*Element
 
 	session  *Session
 	settings *elementSettings
@@ -42,6 +42,11 @@ func (ee *Elements) Size() int {
 	return len(ee.elements)
 }
 
+// Elements returns the list elements.
+func (ee *Elements) Elements() []*Element {
+	return ee.elements
+}
+
 func (ee *Elements) findElements() ([]string, error) {
 	res, err := ee.api.executeRequest(
 		http.MethodPost,
@@ -67,23 +72,20 @@ func (ee *Elements) findElements() ([]string, error) {
 
 	v, ok := res.Value.([]interface{})
 	if !ok {
-		return []string{}, errors.New("failed to convert elements' ID response")
+		return []string{}, errors.New("failed to convert GET elements response")
 	}
-
-	fmt.Printf("Value type %T\n", v)
-	fmt.Printf("Value value %v\n", len(v))
 
 	ids := make([]string, 0, len(v))
 
 	for _, elem := range v {
-		e, ok := elem.(map[string]string)
+		e, ok := elem.(map[string]interface{})
+
 		if !ok {
 			return []string{}, errors.New(
 				"failed to convert elements' element ID response",
 			)
 		}
 
-		// TODO: Make this actually work
 		ids = append(ids, getElementID(e))
 	}
 
@@ -100,5 +102,10 @@ func (ee *Elements) setElementsID() {
 		handleError(nil, err)
 	}
 
-	ee.elements = ids
+	for _, id := range ids {
+		e := ee.session.NewElement(id)
+		e.id = id
+
+		ee.elements = append(ee.elements, e)
+	}
 }
