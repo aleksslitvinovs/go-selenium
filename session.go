@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"github.com/theRealAlpaca/go-selenium/selector"
+	"github.com/theRealAlpaca/go-selenium/selectors"
 )
 
 // Session represents a single user agent. It describes connection between
@@ -96,13 +96,13 @@ func (s *Session) AddError(err string) {
 // UseCSS sets session's locator strategy to CSS. All future NewElement calls
 // will use CSS as the default locator strategy.
 func (s *Session) UseCSS() {
-	s.locatorStrategy = selector.CSS
+	s.locatorStrategy = selectors.CSS
 }
 
 // UseXPath sets session's locator strategy to XPath. All future NewElement
 // calls will use XPath as the default locator strategy.
 func (s *Session) UseXPath() {
-	s.locatorStrategy = selector.XPath
+	s.locatorStrategy = selectors.XPath
 }
 
 // RaiseErrors raises all the session's errors.

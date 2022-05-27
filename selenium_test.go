@@ -8,7 +8,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/theRealAlpaca/go-selenium"
-	"github.com/theRealAlpaca/go-selenium/key"
+	"github.com/theRealAlpaca/go-selenium/keys"
 )
 
 func MyTest(s *selenium.Session) {
@@ -17,7 +17,7 @@ func MyTest(s *selenium.Session) {
 	s.NewElement("#search_form_input_homepage").
 		WaitFor(10 * time.Second).UntilIsVisible().
 		SendKeys("WebDriver").
-		SendKeys(key.Enter)
+		SendKeys(keys.Enter)
 
 	result := s.NewElement("#r1-0 [data-testid=result-title-a]").
 		WaitFor(10 * time.Second).UntilIsVisible().
@@ -32,7 +32,7 @@ func EbayTestSearch(s *selenium.Session) {
 	s.NewElement(".nav-search-field .nav-input").
 		WaitFor(10 * time.Second).UntilIsVisible().
 		SendKeys("MacBook").
-		SendKeys(key.Enter)
+		SendKeys(keys.Enter)
 
 	fmt.Println(
 		"First result text:",
@@ -114,7 +114,7 @@ func AssertTest(s *selenium.Session) {
 	s.NewElement("#search_form_input_homepage").
 		WaitFor(10 * time.Second).UntilIsVisible().
 		SendKeys("WebDriver").
-		SendKeys(key.Enter)
+		SendKeys(keys.Enter)
 
 	e := s.NewElement("#search_form_input").
 		WaitFor(10 * time.Second).UntilIsVisible()
@@ -209,7 +209,7 @@ func DuckDuckGo(s *selenium.Session) {
 	s.NewElement("#search_form_input_homepage").
 		WaitFor(10 * time.Second).UntilIsVisible().
 		SendKeys("WebDriver").
-		SendKeys(key.Enter)
+		SendKeys(keys.Enter)
 
 	result := s.NewElement("#r1-0 .result__a").
 		WaitFor(10 * time.Second).UntilIsVisible().

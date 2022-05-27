@@ -1,4 +1,4 @@
-package key
+package keys
 
 // A list of keypress codes for SendKeys.
 const (

@@ -34,7 +34,7 @@ import (
 	"time"
 
 	"github.com/theRealAlpaca/go-selenium"
-	"github.com/theRealAlpaca/go-selenium/key"
+	"github.com/theRealAlpaca/go-selenium/keys"
 )
 
 func Test(t *testing.T) {
@@ -49,7 +49,7 @@ func MyTest(s *selenium.Session) {
 	s.NewElement("#search_form_input_homepage").
 		WaitFor(10 * time.Second).UntilIsVisible().
 		SendKeys("theRealAlpaca/go-selenium").
-		SendKeys(key.Enter)
+		SendKeys(keys.Enter)
 
 	result := s.NewElement("#r1-0 [data-testid=result-title-a]").
 		WaitFor(10 * time.Second).UntilIsVisible().
@@ -67,26 +67,62 @@ Even though the library is designed to work with the default configuration, it
 has many configurable options that are defined in `.goseleniumrc.json` file
 (generated automatically on the first run).
 
-| Option                       | Description                                                                | Type                              | Default                   |
-| ---------------------------- | -------------------------------------------------------------------------- | --------------------------------- | ------------------------- |
-| `logging`                    | Logging level                                                              | `string`                          | `"info"`                  |
-| `soft_asserts`               | Use soft assertions, i.e., continue executing the test in case of an error | `bool`                            | `true`                    |
-| `screenshot_dir`             | Directory in which save screenshots                                        | `string`                          | `""`                      |
-| `raise_errors_automatically` | Raise errors automatically when the test ends                              | `bool`                            | `true`                    |
-| `runner`                     |                                                                            | `object`                          |                           |
-| `runner.parallel_runs`       | Number of parallel tests to execute                                        | `int`                             | `1`                       |
-| `element`                    |                                                                            | `object`                          |                           |
-| `element.selector_type`      | Default selector type used when locating element                           | `string`                          | `css selector`            |
-| `element.ignore_not_found`   | Throw error if element is not found                                        | `bool`                            | `false`                   |
-| `element.retry_timeout`      | Timeout for trying to locate the given element                             | [`time`](./README.md#time-format) | `10s`                     |
-| `element.poll_interval`      | Time interval to validate element's state when using `WaitFor()` command   | [`time`](./README.md#time-format) | `500ms`                   |
-| `webdriver`                  |                                                                            | `object`                          |                           |
-| `webdriver.browser`          | Browser to use                                                             | `string`                          | `"chrome"`                |
-| `webdriver.manual_start`     | Start browser driver process manually                                      | `bool`                            | `false`                   |
-| `webdriver.binary_path`      | Path to browser driver binary                                              | `string`                          | `"./chromedriver"`        |
-| `webdriver.remote_url`       | URL to which WebDriver commands are sent                                   | `string`                          | `"http://localhost:4444"` |
-| `webdriver.timeout`          | Time which which browser driver should be ready to accept command          | [`time`](./README.md#time-format) | `"10 s"`                  |
-| `webdriver.capabilities`     | Browser capabilities                                                       | `map[string]interface{}`          | `{}`                      |
+Automatically generated default `.goseleniumrc.json`:
+
+```json
+{
+  "logging": "info",
+  "soft_asserts": false,
+  "webdriver": {
+    "browser": "chrome"
+  }
+}
+```
+
+All available configuration options:
+
+| Option                       | Description                                                                 | Type                     | Default                   |
+| ---------------------------- | --------------------------------------------------------------------------- | ------------------------ | ------------------------- |
+| `logging`                    | Logging level.                                                              | `string`                 | `"info"`                  |
+| `soft_asserts`               | Use soft assertions, i.e., continue executing the test in case of an error. | `bool`                   | `true`                    |
+| `screenshot_dir`             | Directory in which save screenshots.                                        | `string`                 | `""`                      |
+| `raise_errors_automatically` | Raise errors automatically when the test ends.                              | `bool`                   | `true`                    |
+| `runner`                     |                                                                             | `object`                 |                           |
+| `runner.parallel_runs`       | Number of parallel tests to execute.                                        | `int`                    | `1`                       |
+| `element`                    |                                                                             | `object`                 |                           |
+| `element.selector_type`      | Default selector type used when locating element.                           | `string`                 | `css selector`            |
+| `element.ignore_not_found`   | Throw error if element is not found.                                        | `bool`                   | `false`                   |
+| `element.retry_timeout`      | Timeout for trying to locate the given element.                             | [`time`](#time-format)   | `10s`                     |
+| `element.poll_interval`      | Time interval to validate element's state when using `WaitFor()` command.   | [`time`](#time-format)   | `500ms`                   |
+| `webdriver`                  |                                                                             | `object`                 |                           |
+| `webdriver.browser`          | Browser to use.                                                             | `string`                 | `"chrome"`                |
+| `webdriver.manual_start`     | Start browser driver process manually.                                      | `bool`                   | `false`                   |
+| `webdriver.binary_path`      | Path to browser driver binary.                                              | `string`                 | `"./chromedriver"`        |
+| `webdriver.remote_url`       | URL with port to which WebDriver commands are sent.                         | `string`                 | `"http://localhost:4444"` |
+| `webdriver.timeout`          | Time which which browser driver should be ready to accept command.          | [`time`](#time-format)   | `"10 s"`                  |
+| `webdriver.capabilities`     | Browser capabilities.                                                       | `map[string]interface{}` | `{}`                      |
+
+## Hooks
+
+go-selenium provides optional before and after hooks that can be used to set up
+& tear down the test environment. Hooks must be set up before calling `selenium.Run()`.
+
+Before/after all hooks are called before/after all tests are executed. They can be set via:
+
+- [`selenium.BeforeAll(fn func())`](https://pkg.go.dev/github.com/theRealAlpaca/go-selenium#SetBeforeAll)
+- [`selenium.AfterAll(fn func())`](https://pkg.go.dev/github.com/theRealAlpaca/go-selenium#SetAfterAll)
+
+Before/after each test hooks are called before/after each test is executed. They can be set via:
+
+- [`selenium.BeforeEach(fn TestFunction)`](https://pkg.go.dev/github.com/theRealAlpaca/go-selenium#SetBeforeEach)
+- [`selenium.AfterEach(fn TestFunction)`](https://pkg.go.dev/github.com/theRealAlpaca/go-selenium#SetAfterEach)
+
+## Helper packages
+
+- `selenium/keys` - contains list of keypress codes used for `SendKeys()`.
+- `selenium/selector` - contains list of selector types used for `NewElement()`.
+- `selenium/types` - contains types used for `go-selenium`, including, list of Webdriver error codes.
+- `selenium/logger` - contains logger to print out prettified logs.
 
 ### Time format
 

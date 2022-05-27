@@ -1,4 +1,4 @@
-package selector
+package selectors
 
 // Supported WebDriver selectors.
 const (

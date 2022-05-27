@@ -3,8 +3,5 @@
   "soft_asserts": false,
   "webdriver": {
     "browser": "chrome"
-  },
-  "runner": {
-    "parallel_runs": 2
   }
 }

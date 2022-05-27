@@ -8,7 +8,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/theRealAlpaca/go-selenium/logger"
-	"github.com/theRealAlpaca/go-selenium/selector"
+	"github.com/theRealAlpaca/go-selenium/selectors"
 	"github.com/theRealAlpaca/go-selenium/types"
 )
 
@@ -168,7 +168,7 @@ func (c *configParams) validateRunner() {
 func (c *configParams) validateElement() {
 	defaultSettings := &elementSettings{
 		IgnoreNotFound: false,
-		SelectorType:   selector.CSS,
+		SelectorType:   selectors.CSS,
 		RetryTimeout:   types.Time{Duration: 10 * time.Second},
 		PollInterval:   types.Time{Duration: 500 * time.Millisecond},
 	}
