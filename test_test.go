@@ -15,6 +15,7 @@ func Test(t *testing.T) {
 		fmt.Println(time.Now().Second())
 	})
 	selenium.SetTest(MyTest)
+
 	// selenium.SetTest(JitsiTest1)
 	// selenium.SetTest(JitsiTest2)
 
