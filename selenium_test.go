@@ -19,7 +19,7 @@ func MyTest(s *selenium.Session) {
 		SendKeys("WebDriver").
 		SendKeys(key.Enter)
 
-	result := s.NewElement("#r1-0 .result__a").
+	result := s.NewElement("#r1-0 [data-testid=result-title-a]").
 		WaitFor(10 * time.Second).UntilIsVisible().
 		GetText()
 

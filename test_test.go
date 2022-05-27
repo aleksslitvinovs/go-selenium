@@ -14,8 +14,9 @@ func Test(t *testing.T) {
 	selenium.SetAfterEach(func(s *selenium.Session) {
 		fmt.Println(time.Now().Second())
 	})
-	selenium.SetTest(JitsiTest1)
-	selenium.SetTest(JitsiTest2)
+	selenium.SetTest(MyTest)
+	// selenium.SetTest(JitsiTest1)
+	// selenium.SetTest(JitsiTest2)
 
 	selenium.Run()
 }

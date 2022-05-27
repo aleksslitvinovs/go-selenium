@@ -115,6 +115,7 @@ func executeTests() {
 
 	runAfterAll()
 }
+
 func worker(tc <-chan *test, wg *sync.WaitGroup) {
 	for t := range tc {
 		runTest(t, wg)
@@ -130,6 +131,8 @@ func runTest(t *test, wg *sync.WaitGroup) {
 	if err != nil {
 		panic(err)
 	}
+
+	t.s = s
 
 	client.ss.mu.Lock()
 	client.ss.sessions[s] = true

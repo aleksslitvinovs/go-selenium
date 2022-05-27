@@ -35,6 +35,8 @@ linters:
     # default disabled linters
     - exhaustive
     - exhaustivestruct
+    - exhaustruct
+    - execinquery
     - funlen
     - gochecknoglobals
     - gochecknoinits
