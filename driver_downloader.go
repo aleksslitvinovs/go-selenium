@@ -14,8 +14,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/aleksslitvinovs/go-selenium/logger"
 	"github.com/pkg/errors"
-	"github.com/theRealAlpaca/go-selenium/logger"
 )
 
 const (
@@ -243,11 +243,15 @@ func unzip(targetFile *os.File, zipName string) error {
 	}
 	defer r.Close()
 
-	if len(r.File) != 1 {
-		return errors.Errorf("Expected 1 file, found %d", len(r.File))
-	}
+	// if len(r.File) != 1 {
+	// 	return errors.Errorf("expected 1 file, found %d", len(r.File))
+	// }
 
 	for _, f := range r.File {
+		if f.Name != targetFile.Name() {
+			continue
+		}
+
 		fr, err := f.Open()
 		if err != nil {
 			return errors.Wrap(err, "failed to open browser driver file")

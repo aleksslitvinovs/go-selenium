@@ -6,15 +6,15 @@ import (
 	"testing"
 	"time"
 
+	"github.com/aleksslitvinovs/go-selenium"
+	"github.com/aleksslitvinovs/go-selenium/keys"
 	"github.com/pkg/errors"
-	"github.com/theRealAlpaca/go-selenium"
-	"github.com/theRealAlpaca/go-selenium/keys"
 )
 
 func MyTest(s *selenium.Session) {
 	s.OpenURL("https://duckduckgo.com/")
 
-	s.NewElement("#search_form_input_homepage").
+	s.NewElement("input[type=text]").
 		WaitFor(10 * time.Second).UntilIsVisible().
 		SendKeys("WebDriver").
 		SendKeys(keys.Enter)

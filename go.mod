@@ -1,4 +1,4 @@
-module github.com/theRealAlpaca/go-selenium
+module github.com/aleksslitvinovs/go-selenium
 
 go 1.18
 

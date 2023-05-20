@@ -1,7 +1,7 @@
 # go-selenium
 
-[![Go Reference](https://pkg.go.dev/badge/github.com/theRealAlpaca/go-selenium.svg)](https://pkg.go.dev/github.com/theRealAlpaca/go-selenium)
-[![Go Report Card](https://goreportcard.com/badge/github.com/theRealAlpaca/go-selenium)](https://goreportcard.com/report/github.com/theRealAlpaca/go-selenium)
+[![Go Reference](https://pkg.go.dev/badge/github.com/aleksslitvinovs/go-selenium.svg)](https://pkg.go.dev/github.com/aleksslitvinovs/go-selenium)
+[![Go Report Card](https://goreportcard.com/badge/github.com/aleksslitvinovs/go-selenium)](https://goreportcard.com/report/github.com/aleksslitvinovs/go-selenium)
 
 ## About
 
@@ -18,7 +18,7 @@ go-selenium supports the following browsers:
 ## Installation
 
 ```bash
-go get github.com/theRealAlpaca/go-selenium
+go get github.com/aleksslitvinovs/go-selenium
 ```
 
 ## Usage
@@ -33,8 +33,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/theRealAlpaca/go-selenium"
-	"github.com/theRealAlpaca/go-selenium/keys"
+	"github.com/aleksslitvinovs/go-selenium"
+	"github.com/aleksslitvinovs/go-selenium/keys"
 )
 
 func Test(t *testing.T) {
@@ -109,13 +109,13 @@ go-selenium provides optional before and after hooks that can be used to set up
 
 Before/after all hooks are called before/after all tests are executed. They can be set via:
 
-- [`selenium.BeforeAll(fn func())`](https://pkg.go.dev/github.com/theRealAlpaca/go-selenium#SetBeforeAll)
-- [`selenium.AfterAll(fn func())`](https://pkg.go.dev/github.com/theRealAlpaca/go-selenium#SetAfterAll)
+- [`selenium.BeforeAll(fn func())`](https://pkg.go.dev/github.com/aleksslitvinovs/go-selenium#SetBeforeAll)
+- [`selenium.AfterAll(fn func())`](https://pkg.go.dev/github.com/aleksslitvinovs/go-selenium#SetAfterAll)
 
 Before/after each test hooks are called before/after each test is executed. They can be set via:
 
-- [`selenium.BeforeEach(fn TestFunction)`](https://pkg.go.dev/github.com/theRealAlpaca/go-selenium#SetBeforeEach)
-- [`selenium.AfterEach(fn TestFunction)`](https://pkg.go.dev/github.com/theRealAlpaca/go-selenium#SetAfterEach)
+- [`selenium.BeforeEach(fn TestFunction)`](https://pkg.go.dev/github.com/aleksslitvinovs/go-selenium#SetBeforeEach)
+- [`selenium.AfterEach(fn TestFunction)`](https://pkg.go.dev/github.com/aleksslitvinovs/go-selenium#SetAfterEach)
 
 ## Helper packages
 

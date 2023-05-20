@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/aleksslitvinovs/go-selenium/logger"
+	"github.com/aleksslitvinovs/go-selenium/types"
 	"github.com/pkg/errors"
-	"github.com/theRealAlpaca/go-selenium/logger"
-	"github.com/theRealAlpaca/go-selenium/types"
 )
 
 // GetText returns the text of the element.

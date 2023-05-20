@@ -6,8 +6,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/aleksslitvinovs/go-selenium/selectors"
 	"github.com/pkg/errors"
-	"github.com/theRealAlpaca/go-selenium/selectors"
 )
 
 // Session represents a single user agent. It describes connection between

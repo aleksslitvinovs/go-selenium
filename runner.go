@@ -5,8 +5,8 @@ import (
 	"os"
 	"sync"
 
+	"github.com/aleksslitvinovs/go-selenium/logger"
 	"github.com/fatih/color"
-	"github.com/theRealAlpaca/go-selenium/logger"
 )
 
 // TestFunction describes one test for the given session. It is used in

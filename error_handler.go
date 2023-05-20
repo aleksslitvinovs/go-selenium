@@ -1,7 +1,7 @@
 package selenium
 
 import (
-	"github.com/theRealAlpaca/go-selenium/logger"
+	"github.com/aleksslitvinovs/go-selenium/logger"
 )
 
 func handleError(res *response, err error) {

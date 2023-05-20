@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/aleksslitvinovs/go-selenium/types"
 	"github.com/pkg/errors"
-	"github.com/theRealAlpaca/go-selenium/types"
 )
 
 // Elements describes a collection of Element type.

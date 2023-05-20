@@ -10,13 +10,14 @@ import (
 	"strings"
 
 	"github.com/TylerBrock/colorjson"
+	"github.com/aleksslitvinovs/go-selenium/logger"
+	"github.com/aleksslitvinovs/go-selenium/types"
 	"github.com/fatih/color"
 	"github.com/pkg/errors"
-	"github.com/theRealAlpaca/go-selenium/logger"
-	"github.com/theRealAlpaca/go-selenium/types"
 )
 
 // Describes possible response status code classes.
+//
 //nolint:deadcode,varcheck
 const (
 	classInformational = iota + 1

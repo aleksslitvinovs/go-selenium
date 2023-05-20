@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/theRealAlpaca/go-selenium"
+	"github.com/aleksslitvinovs/go-selenium"
 )
 
 const url = "https://meet.jit.si/RTU_test"

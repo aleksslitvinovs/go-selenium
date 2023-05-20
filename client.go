@@ -8,8 +8,8 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/aleksslitvinovs/go-selenium/logger"
 	"github.com/pkg/errors"
-	"github.com/theRealAlpaca/go-selenium/logger"
 )
 
 type sessionStore struct {
